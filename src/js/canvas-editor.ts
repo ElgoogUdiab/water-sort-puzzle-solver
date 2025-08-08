@@ -1,6 +1,6 @@
 // Canvas-based game editor
 
-import { GameNode, NodeType } from './game.js';
+import { NodeType } from './game.ts';
 
 export class CanvasEditor {
     canvas: HTMLCanvasElement;
@@ -9,7 +9,7 @@ export class CanvasEditor {
     W: number;
     H: number;
     S: number;
-    board: Array<Array<{type: string, color: number[] | null}>>;
+    board: Array<Array<{type: NodeType, color: number[] | null}>>;
     palette: Array<{rgb: number[], target: number, remaining: number}>;
     activeColorIndex: number;
     currentGameState: any;
@@ -33,8 +33,11 @@ export class CanvasEditor {
         this.resize();
     }
     
-    createBoard(w, h) { 
-        return Array.from({length: w}, () => Array.from({length: h}, () => ({type: '_', color: null})));
+    createBoard(w, h) {
+        return Array.from(
+            {length: w},
+            () => Array.from({length: h}, () => ({type: NodeType.EMPTY, color: null}))
+        );
     }
     
     hexToRgb(hex) { 
@@ -71,7 +74,7 @@ export class CanvasEditor {
         for (let c = 0; c < this.W; c++) {
             for (let r = 0; r < this.H; r++) {
                 const cell = this.board[c][r];
-                if (cell.type === '.' && cell.color) {
+                if (cell.type === NodeType.KNOWN && cell.color) {
                     const idx = this.palette.findIndex(p => JSON.stringify(p.rgb) === JSON.stringify(cell.color));
                     if (idx >= 0) this.palette[idx].remaining = Math.max(0, this.palette[idx].remaining - 1);
                 }
@@ -121,13 +124,13 @@ export class CanvasEditor {
         for (let c = 0; c < this.W; c++) {
             for (let r = 0; r < this.H; r++) {
                 const y = (this.H - 1 - r) * this.S, x = c * this.S, cell = this.board[c][r];
-                
-                if (cell.type === '_' || (!cell.color && cell.type !== '?')) { 
-                    this.ctx.fillStyle = '#0b1220'; 
-                } else if (cell.type === '?') {
+
+                if (cell.type === NodeType.EMPTY || (!cell.color && cell.type !== NodeType.UNKNOWN)) {
+                    this.ctx.fillStyle = '#0b1220';
+                } else if (cell.type === NodeType.UNKNOWN) {
                     this.ctx.fillStyle = '#000';
-                } else { 
-                    const [R, G, B] = cell.color; 
+                } else {
+                    const [R, G, B] = cell.color!;
                     this.ctx.fillStyle = `rgb(${R},${G},${B})`;
                 }
                 this.ctx.fillRect(x, y, this.S, this.S);
@@ -135,7 +138,7 @@ export class CanvasEditor {
                 this.ctx.strokeRect(x + 0.5, y + 0.5, this.S - 1, this.S - 1);
                 
                 // Draw question mark for unknown blocks
-                if (cell.type === '?') {
+                if (cell.type === NodeType.UNKNOWN) {
                     this.ctx.fillStyle = '#fff';
                     this.ctx.font = 'bold 18px Arial';
                     this.ctx.textAlign = 'center';
@@ -159,23 +162,23 @@ export class CanvasEditor {
 
         const cell = this.board[cx][cy];
         if (e.button === 2) { // Right click: erase
-            if (cell.type !== '_') {
+            if (cell.type !== NodeType.EMPTY) {
                 // Refund remaining to matching palette color
                 const idx = this.palette.findIndex(p => JSON.stringify(p.rgb) === JSON.stringify(cell.color));
                 if (idx >= 0) this.palette[idx].remaining = Math.min(this.palette[idx].target, this.palette[idx].remaining + 1);
             }
-            this.board[cx][cy] = {type: '_', color: null};
+            this.board[cx][cy] = {type: NodeType.EMPTY, color: null};
         } else { // Left click: paint with active color
             const p = this.palette[this.activeColorIndex];
             if (!p || p.remaining <= 0) return;
-            
+
             // If replacing an existing known color, refund its palette first
-            if (cell.type !== '_' && cell.type !== '?') {
+            if (cell.type !== NodeType.EMPTY && cell.type !== NodeType.UNKNOWN) {
                 const idx = this.palette.findIndex(pp => JSON.stringify(pp.rgb) === JSON.stringify(cell.color));
                 if (idx >= 0) this.palette[idx].remaining = Math.min(this.palette[idx].target, this.palette[idx].remaining + 1);
             }
-            
-            this.board[cx][cy] = {type: '.', color: [...p.rgb]};
+
+            this.board[cx][cy] = {type: NodeType.KNOWN, color: [...p.rgb]};
             p.remaining -= 1;
         }
         this.renderPalette();
@@ -199,7 +202,7 @@ export class CanvasEditor {
         this.board = this.createBoard(this.W, this.H);
         for (let t = 0; t < n; t++) {
             for (let r = 0; r < this.H; r++) {
-                this.board[t][r] = {type: '.', color: [...this.palette[t % this.palette.length].rgb]};
+                this.board[t][r] = {type: NodeType.KNOWN, color: [...this.palette[t % this.palette.length].rgb]};
             }
         }
         
@@ -207,14 +210,14 @@ export class CanvasEditor {
         for (let k = 0; k < 200; k++) {
             const a = Math.floor(Math.random() * this.W), b = Math.floor(Math.random() * this.W);
             if (a === b) continue;
-            const srcTop = this.board[a].slice().reverse().findIndex(c => c.type !== '_');
+            const srcTop = this.board[a].slice().reverse().findIndex(c => c.type !== NodeType.EMPTY);
             if (srcTop < 0) continue;
             const ai = this.board[a].length - 1 - srcTop;
-            const bi = this.board[b].slice().reverse().findIndex(c => c.type !== '_');
+            const bi = this.board[b].slice().reverse().findIndex(c => c.type !== NodeType.EMPTY);
             const insert = bi < 0 ? 0 : this.board[b].length - 1 - bi + 1;
             const cell = this.board[a][ai];
             for (let r = this.board[a].length - 1; r > ai; r--) this.board[a][r] = this.board[a][r - 1];
-            this.board[a][ai] = {type: '_', color: null};
+            this.board[a][ai] = {type: NodeType.EMPTY, color: null};
             for (let r = this.board[b].length - 1; r > insert; r--) this.board[b][r] = this.board[b][r - 1];
             this.board[b][insert] = cell;
         }
@@ -232,13 +235,13 @@ export class CanvasEditor {
             const group = [];
             for (let r = 0; r < this.H; r++) {
                 const cell = this.board[c][r];
-                if (cell.type === '_') {
+                if (cell.type === NodeType.EMPTY) {
                     // Check if there are known blocks above (at any position above this one)
-                    const hasKnownAbove = this.board[c].slice(r + 1).some(cellAbove => cellAbove.type === '.');
+                    const hasKnownAbove = this.board[c].slice(r + 1).some(cellAbove => cellAbove.type === NodeType.KNOWN);
                     if (hasKnownAbove) {
                         // Blank block with known blocks above = unknown block
                         group.push({
-                            nodeType: '?',
+                            nodeType: NodeType.UNKNOWN,
                             color: null,
                             originalPos: [c, r]
                         });
@@ -274,11 +277,11 @@ export class CanvasEditor {
             const g = [];
             for (let r = 0; r < this.board[0].length; r++) {
                 const cell = this.board[c][r];
-                if (cell.type === '_') {
-                    g.push({nodeType: '_', originalPos: [c, r], color: null});
+                if (cell.type === NodeType.EMPTY) {
+                    g.push({nodeType: NodeType.EMPTY, originalPos: [c, r], color: null});
                 } else {
                     const color = cell.color ? this.rgbToHex(cell.color) : '#000000';
-                    g.push({nodeType: '.', originalPos: [c, r], color: color});
+                    g.push({nodeType: NodeType.KNOWN, originalPos: [c, r], color: color});
                 }
             }
             groups.push(g);
