@@ -80,6 +80,7 @@ export class GameVisualizer {
 export class SolutionVisualizer {
     container: HTMLElement;
     solutionStates: any[] | null = null;
+    revealSteps: ({col: number, row: number} | null)[] | null = null;
 
     constructor(resultContainerId: string) {
         this.container = document.getElementById(resultContainerId)!;
@@ -88,38 +89,39 @@ export class SolutionVisualizer {
     displaySolution(result, initialGameState) {
         if (result.success) {
             const isPartial = result.isPartialSolution;
-            const title = isPartial ? "🔍 Unknown Blocks Revealed!" : "✅ Solution Found!";
-            const description = isPartial ? 
-                "<p><em>This sequence reveals unknown blocks. Solve again after seeing the revealed blocks for a complete solution.</em></p>" : 
-                "<p><em>Complete solution found!</em></p>";
-            
+            const title = isPartial ? '🔍 Unknown Blocks Revealed!' : '✅ Solution Found!';
+            const description = isPartial
+                ? '<p><em>This sequence reveals unknown blocks. Solve again after seeing the revealed blocks for a complete solution.</em></p>'
+                : '<p><em>Complete solution found!</em></p>';
+
+            const calc = this.calculateSolutionStates(result.steps, initialGameState);
+            this.solutionStates = calc.states;
+            this.revealSteps = calc.reveals;
+
             this.container.innerHTML = `
-                <div class="solution">
+                <div class='solution'>
                     <h4>${title}</h4>
                     <p><strong>Steps:</strong> ${result.steps.length}</p>
                     <p><strong>States Searched:</strong> ${result.searchedStates}</p>
                     ${description}
                     <p><em>Click on any step to see the game state at that point</em></p>
-                    <ol class="steps" id="solutionSteps">
-                        ${result.steps.map((step, index) => 
-                            `<li onclick="showStepState(${index + 1})" style="cursor: pointer; padding: 12px 16px; margin: 4px 0; border-radius: 8px;" 
-                                onmouseover="this.style.backgroundColor='#1f2937'" 
-                                onmouseout="this.style.backgroundColor='#0b1220'">${step}</li>`
-                        ).join('')}
+                    <ol class='steps' id='solutionSteps'>
+                        ${result.steps.map((step, index) => {
+                            const reveal = this.revealSteps ? this.revealSteps[index] : null;
+                            const extra = reveal ? ` - reveal column ${reveal.col}, row ${reveal.row}` : '';
+                            return `<li onclick='showStepState(${index + 1})' style='cursor: pointer; padding: 12px 16px; margin: 4px 0; border-radius: 8px;' onmouseover="this.style.backgroundColor='#1f2937'" onmouseout="this.style.backgroundColor='#0b1220'">${step}${extra}</li>`;
+                        }).join('')}
                     </ol>
-                    <div id="stepStateVisualization" style="margin-top: 20px;"></div>
+                    <div id='stepStateVisualization' style='margin-top: 20px;'></div>
                 </div>
             `;
-            
-            // Store the solution for step visualization
-            this.solutionStates = this.calculateSolutionStates(result.steps, initialGameState);
-            
+
             // Make showStepState globally available
             window.showStepState = (stepIndex) => this.showStepState(stepIndex);
-            
+
         } else {
             this.container.innerHTML = `
-                <div class="error">
+                <div class='error'>
                     <h4>❌ No Solution Found</h4>
                     <p>The solver couldn't find a solution within the search depth limit.</p>
                     <p>Try increasing the search depth or check if the puzzle is solvable.</p>
@@ -127,26 +129,43 @@ export class SolutionVisualizer {
             `;
         }
     }
-
     displayError(message) {
         this.container.innerHTML = `<div class="error">${message}</div>`;
     }
 
     calculateSolutionStates(steps, initialGameState) {
         const states = [JSON.parse(JSON.stringify(initialGameState))]; // Initial state
+        const reveals: ({col: number, row: number} | null)[] = [];
         let currentState = JSON.parse(JSON.stringify(initialGameState));
-        
+
         // Initialize undo count if not present
         if (!currentState.undoCount) currentState.undoCount = 5;
-        
+
         for (const step of steps) {
+            const prevState = JSON.parse(JSON.stringify(currentState));
             // Apply the step to get the next state
             currentState = this.applyStepToState(currentState, step);
+
+            // Detect newly revealed unknown node
+            let revealed: {col: number, row: number} | null = null;
+            for (let c = 0; c < currentState.groups.length; c++) {
+                const prevGroup = prevState.groups[c] || [];
+                const currGroup = currentState.groups[c] || [];
+                for (let r = 0; r < currGroup.length; r++) {
+                    const before = prevGroup[r];
+                    const after = currGroup[r];
+                    if (before && after && before.nodeType === NodeType.UNKNOWN && after.nodeType === NodeType.UNKNOWN_REVEALED) {
+                        revealed = {col: c + 1, row: r + 1};
+                    }
+                }
+            }
+            reveals.push(revealed);
             states.push(JSON.parse(JSON.stringify(currentState)));
         }
-        
-        return states;
+
+        return {states, reveals};
     }
+        
     
     applyStepToState(state, stepStr) {
         // Parse step like "1 -> 2" or "Undo"
@@ -199,6 +218,14 @@ export class SolutionVisualizer {
                 
                 // Add to destination
                 dstGroup.push(...ballsToMove);
+
+                // Reveal unknown if exposed at top of source
+                if (srcGroup.length > 0) {
+                    const top = srcGroup[srcGroup.length - 1];
+                    if (top.nodeType === NodeType.UNKNOWN) {
+                        top.nodeType = NodeType.UNKNOWN_REVEALED;
+                    }
+                }
             }
         }
         
