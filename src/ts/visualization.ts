@@ -43,14 +43,14 @@ export class GameVisualizer {
                     ball.textContent = '?';
                     ball.title = 'Unknown';
                 } else if (node.nodeType === NodeType.UNKNOWN_REVEALED) {
-                    ball.style.backgroundColor = '#f0f0f0';
-                    ball.style.color = '#666';
+                    ball.style.backgroundColor = '#ccc';
+                    ball.style.color = '#333';
                     ball.style.display = 'flex';
                     ball.style.alignItems = 'center';
                     ball.style.justifyContent = 'center';
-                    ball.style.fontSize = '16px';
+                    ball.style.fontSize = '18px';
                     ball.style.fontWeight = 'bold';
-                    ball.textContent = '!';
+                    ball.textContent = '?';
                     ball.title = 'Unknown Revealed';
                 } else if (node.color) {
                     ball.style.backgroundColor = node.color;
