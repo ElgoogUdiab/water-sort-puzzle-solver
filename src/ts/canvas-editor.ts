@@ -278,10 +278,19 @@ export class CanvasEditor {
             for (let r = 0; r < this.board[0].length; r++) {
                 const cell = this.board[c][r];
                 if (cell.type === NodeType.EMPTY) {
-                    g.push({nodeType: NodeType.EMPTY, originalPos: [c, r], color: null});
+                    const hasKnownAbove = this.board[c]
+                        .slice(r + 1)
+                        .some(cellAbove => cellAbove.type === NodeType.KNOWN);
+                    if (hasKnownAbove) {
+                        g.push({ nodeType: NodeType.UNKNOWN, originalPos: [c, r], color: null });
+                    } else {
+                        g.push({ nodeType: NodeType.EMPTY, originalPos: [c, r], color: null });
+                    }
+                } else if (cell.type === NodeType.UNKNOWN || cell.type === NodeType.UNKNOWN_REVEALED) {
+                    g.push({ nodeType: cell.type, originalPos: [c, r], color: null });
                 } else {
                     const color = cell.color ? this.rgbToHex(cell.color) : '#000000';
-                    g.push({nodeType: NodeType.KNOWN, originalPos: [c, r], color: color});
+                    g.push({ nodeType: NodeType.KNOWN, originalPos: [c, r], color: color });
                 }
             }
             groups.push(g);
