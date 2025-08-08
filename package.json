@@ -2,6 +2,7 @@
   "name": "water-sort-puzzle-solver",
   "version": "1.0.0",
   "description": "Interactive Water Sort Puzzle Solver with visual editor",
+  "type": "module",
   "main": "src/ts/app.ts",
   "scripts": {
     "dev": "vite",
