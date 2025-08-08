@@ -158,7 +158,11 @@
 
     function rebuildPalette(){
       const n = Math.max(1, Math.min(20, +numColorsEl.value || Math.max(2, W-2)));
-      const base = [ '#ef4444','#f59e0b','#10b981','#3b82f6','#8b5cf6','#ec4899','#22c55e','#eab308','#06b6d4','#f97316','#84cc16','#a3e635','#14b8a6','#6366f1','#f43f5e','#06b6d4','#facc15','#22d3ee','#16a34a','#8b5cf6' ];
+      const base = [
+        '#D98336', '#B33C38', '#0026C9', '#DC687D', '#01E5A6',
+        '#55A3E3', '#707070', '#662F8C', '#68A90F', '#663300',
+        '#3A5312', '#FFE643'
+      ];
       palette = Array.from({length:n},(_,i)=>({ rgb: hexToRgb(base[i%base.length]), target: H, remaining: H }));
       // recompute remaining based on current board placements
       recalcPaletteRemaining();
