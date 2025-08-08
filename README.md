@@ -6,7 +6,7 @@ An interactive web application for creating and solving Water Sort puzzles with 
 
 - **🎨 Interactive Canvas Editor**: Paint directly on the grid to create puzzles
 - **🎯 Smart Color Palette**: Automatic color management with remaining piece tracking
-- **🧠 Intelligent Solver**: JavaScript implementation matching the Python algorithm exactly
+- **🧠 Intelligent Solver**: TypeScript implementation matching the Python algorithm exactly
 - **📊 Solution Visualization**: Click on solution steps to see board states
 - **🎮 Multiple Game Modes**: Normal, No-combo, Queue (FIFO) modes
 - **🎲 Random Puzzle Generator**: Create randomized puzzles for testing
@@ -44,12 +44,12 @@ src/
 ├── index.html          # Main HTML file
 ├── css/
 │   └── style.css       # All styles
-└── js/
-    ├── app.js          # Main application
-    ├── game.js         # Game logic (port of game.py)
-    ├── solver.js       # Solver algorithm (port of solver.py)
-    ├── canvas-editor.js # Canvas-based editor
-    └── visualization.js # Game visualization
+└── ts/
+    ├── app.ts          # Main application
+    ├── game.ts         # Game logic (port of game.py)
+    ├── solver.ts       # Solver algorithm (port of solver.py)
+    ├── canvas-editor.ts # Canvas-based editor
+    └── visualization.ts # Game visualization
 ```
 
 ### Available Scripts
@@ -90,7 +90,7 @@ The application uses a carefully selected 12-color palette extracted from Excel:
 
 ## 🔧 Technical Details
 
-- **Pure JavaScript**: No external dependencies for game logic
+- **Pure TypeScript**: No external dependencies for game logic
 - **ES6 Modules**: Modern modular architecture
 - **Canvas Rendering**: Smooth 60fps painting experience
 - **1:1 Python Port**: Identical algorithm to the original Python solver

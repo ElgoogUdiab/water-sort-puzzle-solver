@@ -1,9 +1,9 @@
 // Main application entry point
 
-import { Game, GameNode, NodeType, GameMode } from './game.js';
-import { solve, SearchState } from './solver.js';
-import { CanvasEditor } from './canvas-editor.js';
-import { GameVisualizer, SolutionVisualizer } from './visualization.js';
+import { Game, GameNode, NodeType, GameMode } from './game.ts';
+import { solve, SearchState } from './solver.ts';
+import { CanvasEditor } from './canvas-editor.ts';
+import { GameVisualizer, SolutionVisualizer } from './visualization.ts';
 
 class WaterSortApp {
     canvasEditor: CanvasEditor;
