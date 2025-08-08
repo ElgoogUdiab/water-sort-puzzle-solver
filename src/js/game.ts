@@ -82,7 +82,41 @@ export class Game {
         this.containsUnknown = this.groups.some(g => 
             g.some(n => n.type === NodeType.UNKNOWN || n.type === NodeType.UNKNOWN_REVEALED)
         );
-    }
+    
+        // === Strict validations aligned with Python implementation ===
+        // 3a) After trimming trailing EMPTY, there should be no EMPTY left in any group
+        for (const [gi, g] of this.groups.entries()) {
+            for (let i = 0; i < g.length; i++) {
+                if (g[i].type === NodeType.EMPTY) {
+                    throw new Error(`Group ${gi}: EMPTY node found in the middle (only trailing EMPTYs are allowed).`);
+                }
+            }
+        }
+        // 3b) Each group's length must be <= capacity
+        for (const [gi, g] of this.groups.entries()) {
+            if (g.length > this.capacity) {
+                throw new Error(`Group ${gi}: length ${g.length} exceeds capacity ${this.capacity}.`);
+            }
+        }
+        // 3c) Total non-empty nodes across groups should be a multiple of capacity
+        const totalNonEmpty = this.groups.reduce((acc, g) => acc + g.length, 0);
+        if (totalNonEmpty % this.capacity !== 0) {
+            throw new Error(`Total filled nodes (${totalNonEmpty}) must be a multiple of capacity (${this.capacity}).`);
+        }
+        // 3d) For KNOWN nodes, each color count should not exceed capacity
+        const colorCount = new Map<string, number>();
+        for (const g of this.groups) {
+            for (const n of g) {
+                if (n.type === NodeType.KNOWN) {
+                    const key = JSON.stringify(n.color);
+                    colorCount.set(key, (colorCount.get(key) ?? 0) + 1);
+                    if ((colorCount.get(key) ?? 0) > this.capacity) {
+                        throw new Error(`Color ${key} appears more than capacity (${this.capacity}).`);
+                    }
+                }
+            }
+        }
+}
     
     static normalizeGroup(g: GameNode[]): GameNode[] {
         const t = [...g];
@@ -166,6 +200,7 @@ export class Game {
             if (!this.prev) return this;
             const ng = this.prev.clone();
             ng.undoCount = this.undoCount - 1;
+            ng.prev = this.prev?.prev ?? null;
             for (const g of ng.groups) {
                 for (let i = 0; i < g.length; i++) {
                     const n = g[i];

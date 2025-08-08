@@ -10,12 +10,19 @@
     "serve": "python3 -m http.server 8000",
     "type-check": "tsc --noEmit"
   },
-  "keywords": ["puzzle", "solver", "game", "water-sort"],
+  "keywords": [
+    "puzzle",
+    "solver",
+    "game",
+    "water-sort"
+  ],
   "author": "Your Name",
   "license": "MIT",
   "devDependencies": {
-    "vite": "^5.0.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "vite": "^5.0.0"
   },
-  "dependencies": {}
+  "dependencies": {
+    "fastpriorityqueue": "^0.7.5"
+  }
 }

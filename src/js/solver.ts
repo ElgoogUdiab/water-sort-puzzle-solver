@@ -1,6 +1,7 @@
 // Solver logic - TypeScript port of solver.py
 
 import { Game, GameNode, NodeType, GameMode, StepOp, UndoOp } from './game.js';
+import FastPriorityQueue from 'fastpriorityqueue';
 
 export class SearchState {
     static instanceCount = 0;
@@ -55,35 +56,43 @@ export function solve(startState: SearchState, depth = 8, debug = false): SolveR
         };
     }
     
-    const searchStateQueue = [startState];
+    
     const discoveredDict = new Map();
     let candidateState = null;
     let candidateSearchStateCount = Infinity;
     
     let searchedStateCount = 0;
     
-    // Simple priority queue implementation
-    function heapPush(arr, item) {
-        arr.push(item);
-        arr.sort((a, b) => {
-            const aVal = a.value;
-            const bVal = b.value;
-            for (let i = 0; i < Math.min(aVal.length, bVal.length); i++) {
-                if (aVal[i] !== bVal[i]) return aVal[i] - bVal[i];
-            }
-            return aVal.length - bVal.length;
-        });
-    }
     
-    function heapPop(arr) {
-        return arr.shift();
-    }
+    // Min-heap comparator on SearchState.value (lexicographic ascending)
+    const pq = new FastPriorityQueue<SearchState>((a, b) => {
+        const av = a.value, bv = b.value;
+        for (let i = 0; i < Math.min(av.length, bv.length); i++) {
+            if (av[i] !== bv[i]) return av[i] < bv[i];
+        }
+        return av.length < bv.length;
+    });
+    pq.add(startState);
+function canonicalStateKey(stateGame: Game): string {
+    // Build groups as arrays of {t, c} ignoring positions
+    const groups = stateGame.groups.map(g => g.map(n => ({ t: n.type, c: n.color })));
+    // Sort each group's items by (t,c) string to make inner tuple canonical
+    const groupStrings = groups.map(grp => {
+        const items = grp.map(x => JSON.stringify(x));
+        // Do NOT sort inside a group: Python uses tuple(group) which preserves order inside each group.
+        // So we keep inner order to match Python; only sort groups themselves.
+        return JSON.stringify(items);
+    });
+    // Sort groups to ignore group order (frozenset of groups)
+    groupStrings.sort();
+    return groupStrings.join("|");
+}
     
-    while (searchStateQueue.length > 0) {
-        const currentSearchState = heapPop(searchStateQueue);
+    while (!pq.isEmpty()) {
+        const currentSearchState = pq.poll();
         const stateGame = currentSearchState.stateGame;
         
-        const discovered = discoveredDict.get(stateGame.key());
+        const discovered = discoveredDict.get(canonicalStateKey(stateGame));
         if (discovered !== undefined) {
             if (discovered[1] >= stateGame.undoCount) {
                 continue;
@@ -143,7 +152,7 @@ export function solve(startState: SearchState, depth = 8, debug = false): SolveR
         }
         
         const path = currentSearchState.path;
-        discoveredDict.set(stateGame.key(), [stateGame, stateGame.undoCount]);
+        discoveredDict.set(canonicalStateKey(stateGame), [stateGame, stateGame.undoCount]);
         const ops = stateGame.ops();
         
         if (debug) {
@@ -151,7 +160,7 @@ export function solve(startState: SearchState, depth = 8, debug = false): SolveR
         }
         
         for (const op of ops) {
-            heapPush(searchStateQueue, new SearchState(stateGame.apply(op), [...path, op]));
+            pq.add(new SearchState(stateGame.apply(op), [...path, op]));
         }
     }
     
