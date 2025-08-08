@@ -81,30 +81,30 @@ class WaterSortApp {
         
         // Use the first three colors from the palette
         const color1 = palette[0].rgb; // Orange
-        const color2 = palette[1].rgb; // Red  
+        const color2 = palette[1].rgb; // Red
         const color3 = palette[2].rgb; // Blue
         
         // Tube 1: Color1-Color1-Color2-Color2 (bottom to top)
-        board[0][0] = {type: '.', color: [...color1]};
-        board[0][1] = {type: '.', color: [...color1]};
-        board[0][2] = {type: '.', color: [...color2]};
-        board[0][3] = {type: '.', color: [...color2]};
+        board[0][0] = {type: NodeType.KNOWN, color: [...color1]};
+        board[0][1] = {type: NodeType.KNOWN, color: [...color1]};
+        board[0][2] = {type: NodeType.KNOWN, color: [...color2]};
+        board[0][3] = {type: NodeType.KNOWN, color: [...color2]};
         
         // Tube 2: Color3-Color3-Color1-Color1
-        board[1][0] = {type: '.', color: [...color3]};
-        board[1][1] = {type: '.', color: [...color3]};
-        board[1][2] = {type: '.', color: [...color1]};
-        board[1][3] = {type: '.', color: [...color1]};
+        board[1][0] = {type: NodeType.KNOWN, color: [...color3]};
+        board[1][1] = {type: NodeType.KNOWN, color: [...color3]};
+        board[1][2] = {type: NodeType.KNOWN, color: [...color1]};
+        board[1][3] = {type: NodeType.KNOWN, color: [...color1]};
         
         // Tube 3: Color2-Color2-Color3-Color3  
-        board[2][0] = {type: '.', color: [...color2]};
-        board[2][1] = {type: '.', color: [...color2]};
-        board[2][2] = {type: '.', color: [...color3]};
-        board[2][3] = {type: '.', color: [...color3]};
+        board[2][0] = {type: NodeType.KNOWN, color: [...color2]};
+        board[2][1] = {type: NodeType.KNOWN, color: [...color2]};
+        board[2][2] = {type: NodeType.KNOWN, color: [...color3]};
+        board[2][3] = {type: NodeType.KNOWN, color: [...color3]};
         
         // Tube 4: Empty
         for (let r = 0; r < 4; r++) {
-            board[3][r] = {type: '_', color: null};
+            board[3][r] = {type: NodeType.EMPTY, color: null};
         }
         
         // Update palette remaining counts  
@@ -138,16 +138,16 @@ class WaterSortApp {
             // Fill from bottom up - game state groups are in bottom-to-top order
             for (let r = 0; r < group.length; r++) {
                 const node = group[r];
-                if (node.nodeType === '.') {
+                if (node.nodeType === NodeType.KNOWN) {
                     // Known node with color
                     const color = this.hexToRgb(node.color);
-                    this.canvasEditor.board[c][r] = {type: '.', color: color};
-                } else if (node.nodeType === '?' || node.nodeType === '!') {
+                    this.canvasEditor.board[c][r] = {type: NodeType.KNOWN, color: color};
+                } else if (node.nodeType === NodeType.UNKNOWN || node.nodeType === NodeType.UNKNOWN_REVEALED) {
                     // Unknown nodes - represent as empty in canvas (will be interpreted as unknown by syncToGameState)
-                    this.canvasEditor.board[c][r] = {type: '_', color: null};
-                } else if (node.nodeType === '_') {
+                    this.canvasEditor.board[c][r] = {type: NodeType.EMPTY, color: null};
+                } else if (node.nodeType === NodeType.EMPTY) {
                     // Empty node - keep as empty
-                    this.canvasEditor.board[c][r] = {type: '_', color: null};
+                    this.canvasEditor.board[c][r] = {type: NodeType.EMPTY, color: null};
                 }
             }
             // All positions above the group remain empty (they're already set to empty by reset())
@@ -166,10 +166,10 @@ class WaterSortApp {
     }
 
     solveGame() {
-        const debugMode = document.getElementById('debugMode').checked;
-        const searchDepth = parseInt(document.getElementById('searchDepth').value);
-        const undoCount = parseInt(document.getElementById('undo').value);
-        const mode = parseInt(document.getElementById('mode').value);
+        const debugMode = (document.getElementById('debugMode') as HTMLInputElement).checked;
+        const searchDepth = parseInt((document.getElementById('searchDepth') as HTMLInputElement).value);
+        const undoCount = parseInt((document.getElementById('undo') as HTMLInputElement).value);
+        const mode = Number((document.getElementById('mode') as HTMLInputElement).value) as GameMode;
         
         try {
             const gameStateForSolver = this.canvasEditor.toSolverFormat();
@@ -183,13 +183,13 @@ class WaterSortApp {
             }
 
             // Convert to solver format
-            const groups = gameStateForSolver.groups.map((group, groupIndex) => 
+            const groups = gameStateForSolver.groups.map((group, groupIndex) =>
                 group.map((node, nodeIndex) => {
                     let nodeType = NodeType.KNOWN;
-                    if (node.nodeType === '?') nodeType = NodeType.UNKNOWN;
-                    else if (node.nodeType === '!') nodeType = NodeType.UNKNOWN_REVEALED;
-                    else if (node.nodeType === '_') nodeType = NodeType.EMPTY;
-                    
+                    if (node.nodeType === NodeType.UNKNOWN) nodeType = NodeType.UNKNOWN;
+                    else if (node.nodeType === NodeType.UNKNOWN_REVEALED) nodeType = NodeType.UNKNOWN_REVEALED;
+                    else if (node.nodeType === NodeType.EMPTY) nodeType = NodeType.EMPTY;
+
                     return new GameNode(nodeType, [groupIndex, nodeIndex], node.color);
                 })
             );
