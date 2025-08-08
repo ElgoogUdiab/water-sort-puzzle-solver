@@ -1,0 +1,336 @@
+/* Water Sort Puzzle Solver - Main Styles */
+
+html, body { 
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; 
+    background: #0b0c10; 
+    color: #e6edf3; 
+    margin: 0;
+    padding: 0;
+}
+
+.container { 
+    max-width: 1120px; 
+    margin: 32px auto; 
+    padding: 0 16px; 
+}
+
+.row { 
+    display: flex; 
+    gap: 16px; 
+    align-items: center; 
+    flex-wrap: wrap; 
+}
+
+.panel { 
+    background: #11151a; 
+    border: 1px solid #1f2937; 
+    border-radius: 14px; 
+    padding: 20px; 
+    box-shadow: 0 8px 30px rgba(0,0,0,.25); 
+    margin-bottom: 16px;
+}
+
+.panel h2, .panel h3 { 
+    margin: 0 0 16px; 
+    font-size: 18px; 
+    opacity: .9; 
+    color: #e6edf3;
+}
+
+h1 {
+    text-align: center;
+    color: #e6edf3;
+    font-size: 28px;
+    margin-bottom: 24px;
+}
+
+/* Buttons */
+button { 
+    background: #2b6cb0; 
+    color: #fff; 
+    border: 0; 
+    border-radius: 12px; 
+    padding: 10px 16px; 
+    cursor: pointer; 
+    font-weight: 600; 
+    font-size: 14px;
+    transition: background-color 0.2s;
+}
+
+button:hover {
+    background: #2563eb;
+}
+
+button.secondary { 
+    background: #334155; 
+}
+
+button.secondary:hover {
+    background: #475569;
+}
+
+button:disabled { 
+    opacity: .6; 
+    cursor: not-allowed; 
+}
+
+/* Form Elements */
+input, select { 
+    background: #0b1220; 
+    color: #e6edf3; 
+    border: 1px solid #1f2937; 
+    border-radius: 10px; 
+    padding: 8px 12px; 
+    font-size: 14px;
+}
+
+label { 
+    font-size: 13px; 
+    opacity: .9; 
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Game Visualization */
+.tube {
+    display: inline-block;
+    width: 44px;
+    height: 180px;
+    border: 2px solid #1f2937;
+    border-radius: 0 0 22px 22px;
+    margin: 6px;
+    position: relative;
+    vertical-align: bottom;
+    background: #0b1220;
+    transition: border-color 0.2s;
+}
+
+.tube.editable {
+    cursor: pointer;
+    border-color: #3b82f6;
+}
+
+.tube.editable:hover {
+    background-color: #0f1629;
+    border-color: #60a5fa;
+}
+
+.ball {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin: 2px;
+    position: absolute;
+    bottom: 2px;
+    left: 2px;
+    border: 1px solid rgba(255,255,255,0.1);
+    transition: opacity 0.2s;
+}
+
+.ball.editable {
+    cursor: pointer;
+}
+
+.ball.editable:hover {
+    opacity: 0.8;
+    border-color: #60a5fa;
+}
+
+/* Layout */
+.game-editor {
+    flex: 1 1 100%;
+}
+
+.game-section {
+    flex: 1 1 100%;
+}
+
+.solution-section {
+    flex: 1 1 100%;
+}
+
+/* Color Palette */
+.color-palette {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 16px 0;
+}
+
+.color-swatch {
+    width: 32px;
+    height: 32px;
+    border: 2px solid #1f2937;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+}
+
+.color-swatch:hover {
+    transform: scale(1.1);
+    border-color: #3b82f6;
+}
+
+.color-swatch.selected {
+    border-color: #3b82f6;
+    border-width: 3px;
+    outline: 2px solid #3b82f6;
+}
+
+/* Controls */
+.editor-controls {
+    margin: 16px 0;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.tube-controls {
+    margin: 16px 0;
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.add-remove-section {
+    margin: 20px 0;
+    padding: 16px;
+    background-color: #0b1220;
+    border-radius: 12px;
+    border: 1px solid #1f2937;
+}
+
+.add-remove-section h4 {
+    margin: 0 0 12px;
+    color: #e6edf3;
+    opacity: 0.9;
+}
+
+/* Solution Display */
+.solution {
+    background-color: #0f2027;
+    border: 1px solid #1f2937;
+    padding: 20px;
+    border-radius: 12px;
+    margin: 16px 0;
+}
+
+.solution h4 {
+    color: #10b981;
+    margin: 0 0 12px;
+}
+
+.steps {
+    list-style-type: none;
+    padding: 0;
+    margin: 16px 0;
+}
+
+.steps li {
+    padding: 12px 16px;
+    margin: 4px 0;
+    background-color: #0b1220;
+    border: 1px solid #1f2937;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.steps li:hover {
+    background-color: #1f2937;
+    border-color: #3b82f6;
+}
+
+/* Error Display */
+.error {
+    color: #ef4444;
+    background-color: #1f1415;
+    border: 1px solid #3f1a1a;
+    padding: 16px;
+    border-radius: 12px;
+    margin: 16px 0;
+}
+
+.error h4 {
+    color: #ef4444;
+    margin: 0 0 8px;
+}
+
+/* Utility Classes */
+.muted {
+    opacity: 0.7;
+    font-size: 14px;
+}
+
+.col {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* Step State Visualization */
+#stepStateVisualization {
+    background: #0b1220;
+    border: 1px solid #1f2937;
+    border-radius: 12px;
+    padding: 16px;
+    margin-top: 16px;
+}
+
+#stepStateVisualization h4 {
+    color: #e6edf3;
+    margin: 0 0 16px;
+}
+
+/* Canvas */
+canvas { 
+    background: #0b1220; 
+    border: 1px solid #1f2937; 
+    border-radius: 12px; 
+    image-rendering: pixelated; 
+}
+
+/* Canvas Color Palette */
+.legend { 
+    display: flex; 
+    gap: 10px; 
+    align-items: center; 
+    flex-wrap: wrap; 
+}
+
+.swatch { 
+    width: 32px; 
+    height: 32px; 
+    border-radius: 8px; 
+    border: 2px solid #1f2937; 
+    display: inline-flex; 
+    align-items: center; 
+    justify-content: center; 
+    cursor: pointer; 
+    position: relative; 
+    transition: all 0.2s;
+}
+
+.swatch:hover {
+    transform: scale(1.1);
+    border-color: #3b82f6;
+}
+
+.badge { 
+    position: absolute; 
+    bottom: -8px; 
+    right: -8px; 
+    background: #0b1220; 
+    border: 1px solid #1f2937; 
+    border-radius: 999px; 
+    padding: 1px 6px; 
+    font-size: 11px; 
+    color: #e6edf3;
+}
+
+.swatch.active { 
+    outline: 2px solid #3b82f6; 
+    border-color: #3b82f6;
+}

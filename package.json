@@ -1,0 +1,21 @@
+{
+  "name": "water-sort-puzzle-solver",
+  "version": "1.0.0",
+  "description": "Interactive Water Sort Puzzle Solver with visual editor",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "serve": "python3 -m http.server 8000",
+    "type-check": "tsc --noEmit"
+  },
+  "keywords": ["puzzle", "solver", "game", "water-sort"],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "vite": "^5.0.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {}
+}

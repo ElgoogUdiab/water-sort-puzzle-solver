@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Water Sort Puzzle Solver</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Water Sort Puzzle Solver</h1>
+        
+        <div class="panel game-editor">
+            <h3>🎨 Board Editor</h3>
+            <div class="row">
+                <label>Columns <input id="cols" type="number" value="6" min="2" max="24"></label>
+                <label>Height <input id="rows" type="number" value="4" min="2" max="12"></label>
+                <label>Mode
+                    <select id="mode">
+                        <option value="0">Normal (combo allowed)</option>
+                        <option value="1">No combo move</option>
+                        <option value="2">Queue output (FIFO)</option>
+                    </select>
+                </label>
+                <label>Undo Count <input id="undo" type="number" value="5" min="0" max="20"></label>
+                <button id="reset" class="secondary">Reset</button>
+                <button id="rand" class="secondary">Randomize</button>
+            </div>
+            <div style="margin-top:10px"><canvas id="grid" width="300" height="300"></canvas></div>
+
+            <div class="panel" style="margin-top:12px">
+                <h3 style="display:flex;align-items:center;gap:8px">Color Palette <span class="muted" id="paletteHint">(left‑click paints, right‑click erases)</span></h3>
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 8px;">
+                    <div class="legend" id="palette"></div>
+                    <div>
+                        <label>Colors <input id="numcolors" type="number" value="3" min="1" max="20"></label>
+                    </div>
+                </div>
+                <div style="background:#0b1220; border:1px solid #1f2937; border-radius:12px; padding:12px; margin-top:8px; font-size:13px; opacity:0.8;">
+                    Each swatch shows its <b>remaining</b> pieces to place. Painting decrements; erasing increments.
+                </div>
+            </div>
+            
+            <div class="row" style="margin-top: 16px;">
+                <button id="solveBtn" style="background-color: #2b6cb0;">🚀 Solve Puzzle</button>
+                <label>
+                    <input type="checkbox" id="debugMode"> Debug Mode
+                </label>
+                <label>
+                    Search Depth: <input type="number" id="searchDepth" value="8" min="1" max="15" style="width: 60px">
+                </label>
+            </div>
+        </div>
+
+        <div class="panel game-section">
+            <h3>Current Game State</h3>
+            <div id="gameVisualization"></div>
+        </div>
+
+        <div class="panel solution-section">
+            <h3>Solution</h3>
+            <div id="solutionResult"></div>
+        </div>
+    </div>
+
+    <script type="module" src="js/app.ts"></script>
+</body>
+</html>

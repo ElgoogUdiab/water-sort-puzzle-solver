@@ -1,0 +1,256 @@
+// Game visualization utilities
+
+export class GameVisualizer {
+    container: HTMLElement;
+
+    constructor(containerId: string) {
+        this.container = document.getElementById(containerId)!;
+    }
+
+    visualizeGameState(gameState) {
+        this.container.innerHTML = '';
+        
+        if (!gameState || !gameState.groups) return;
+        
+        const maxHeight = Math.max(...gameState.groups.map(g => g.length), 1);
+        
+        for (let i = 0; i < gameState.groups.length; i++) {
+            const tube = document.createElement('div');
+            tube.className = 'tube';
+            tube.style.height = (maxHeight * 40 + 20) + 'px';
+            
+            const group = gameState.groups[i];
+            for (let j = 0; j < group.length; j++) {
+                const node = group[j];
+                
+                // Skip EMPTY nodes
+                if (node.nodeType === '_') continue;
+                
+                const ball = document.createElement('div');
+                ball.className = 'ball';
+                ball.style.bottom = (j * 38 + 2) + 'px';
+                
+                if (node.nodeType === '?') {
+                    ball.style.backgroundColor = '#000';
+                    ball.style.color = '#fff';
+                    ball.style.display = 'flex';
+                    ball.style.alignItems = 'center';
+                    ball.style.justifyContent = 'center';
+                    ball.style.fontSize = '18px';
+                    ball.style.fontWeight = 'bold';
+                    ball.textContent = '?';
+                    ball.title = 'Unknown';
+                } else if (node.nodeType === '!') {
+                    ball.style.backgroundColor = '#f0f0f0';
+                    ball.style.color = '#666';
+                    ball.style.display = 'flex';
+                    ball.style.alignItems = 'center';
+                    ball.style.justifyContent = 'center';
+                    ball.style.fontSize = '16px';
+                    ball.style.fontWeight = 'bold';
+                    ball.textContent = '!';
+                    ball.title = 'Unknown Revealed';
+                } else if (node.color) {
+                    ball.style.backgroundColor = node.color;
+                    ball.title = node.color;
+                }
+                
+                tube.appendChild(ball);
+            }
+            
+            const label = document.createElement('div');
+            label.textContent = (i + 1).toString();
+            label.style.textAlign = 'center';
+            label.style.marginTop = '5px';
+            label.style.fontSize = '12px';
+            
+            const tubeContainer = document.createElement('div');
+            tubeContainer.style.display = 'inline-block';
+            tubeContainer.style.textAlign = 'center';
+            tubeContainer.appendChild(tube);
+            tubeContainer.appendChild(label);
+            
+            this.container.appendChild(tubeContainer);
+        }
+    }
+}
+
+export class SolutionVisualizer {
+    container: HTMLElement;
+    solutionStates: any[] | null = null;
+
+    constructor(resultContainerId: string) {
+        this.container = document.getElementById(resultContainerId)!;
+    }
+
+    displaySolution(result, initialGameState) {
+        if (result.success) {
+            const isPartial = result.isPartialSolution;
+            const title = isPartial ? "🔍 Unknown Blocks Revealed!" : "✅ Solution Found!";
+            const description = isPartial ? 
+                "<p><em>This sequence reveals unknown blocks. Solve again after seeing the revealed blocks for a complete solution.</em></p>" : 
+                "<p><em>Complete solution found!</em></p>";
+            
+            this.container.innerHTML = `
+                <div class="solution">
+                    <h4>${title}</h4>
+                    <p><strong>Steps:</strong> ${result.steps.length}</p>
+                    <p><strong>States Searched:</strong> ${result.searchedStates}</p>
+                    ${description}
+                    <p><em>Click on any step to see the game state at that point</em></p>
+                    <ol class="steps" id="solutionSteps">
+                        ${result.steps.map((step, index) => 
+                            `<li onclick="showStepState(${index + 1})" style="cursor: pointer; padding: 12px 16px; margin: 4px 0; border-radius: 8px;" 
+                                onmouseover="this.style.backgroundColor='#1f2937'" 
+                                onmouseout="this.style.backgroundColor='#0b1220'">${step}</li>`
+                        ).join('')}
+                    </ol>
+                    <div id="stepStateVisualization" style="margin-top: 20px;"></div>
+                </div>
+            `;
+            
+            // Store the solution for step visualization
+            this.solutionStates = this.calculateSolutionStates(result.steps, initialGameState);
+            
+            // Make showStepState globally available
+            window.showStepState = (stepIndex) => this.showStepState(stepIndex);
+            
+        } else {
+            this.container.innerHTML = `
+                <div class="error">
+                    <h4>❌ No Solution Found</h4>
+                    <p>The solver couldn't find a solution within the search depth limit.</p>
+                    <p>Try increasing the search depth or check if the puzzle is solvable.</p>
+                </div>
+            `;
+        }
+    }
+
+    displayError(message) {
+        this.container.innerHTML = `<div class="error">${message}</div>`;
+    }
+
+    calculateSolutionStates(steps, initialGameState) {
+        const states = [JSON.parse(JSON.stringify(initialGameState))]; // Initial state
+        let currentState = JSON.parse(JSON.stringify(initialGameState));
+        
+        // Initialize undo count if not present
+        if (!currentState.undoCount) currentState.undoCount = 5;
+        
+        for (const step of steps) {
+            // Apply the step to get the next state
+            currentState = this.applyStepToState(currentState, step);
+            states.push(JSON.parse(JSON.stringify(currentState)));
+        }
+        
+        return states;
+    }
+    
+    applyStepToState(state, stepStr) {
+        // Parse step like "1 -> 2" or "Undo"
+        if (stepStr === "Undo") {
+            // Decrement undo count
+            const newState = JSON.parse(JSON.stringify(state));
+            newState.undoCount = Math.max(0, (newState.undoCount || 5) - 1);
+            return newState;
+        }
+        
+        const match = stepStr.match(/(\d+) -> (\d+)/);
+        if (!match) return state;
+        
+        const srcIndex = parseInt(match[1]) - 1;  // Convert to 0-based
+        const dstIndex = parseInt(match[2]) - 1;
+        
+        const newState = JSON.parse(JSON.stringify(state));
+        const srcGroup = newState.groups[srcIndex];
+        const dstGroup = newState.groups[dstIndex];
+        
+        if (srcGroup && srcGroup.length > 0) {
+            // Find the top non-empty ball (skip EMPTY nodes)
+            let topBallIndex = -1;
+            for (let i = srcGroup.length - 1; i >= 0; i--) {
+                if (srcGroup[i].nodeType !== '_') {
+                    topBallIndex = i;
+                    break;
+                }
+            }
+            
+            if (topBallIndex >= 0) {
+                const ball = srcGroup[topBallIndex];
+                
+                // For normal mode, move all consecutive balls of same color from top
+                const ballsToMove = [];
+                for (let i = topBallIndex; i >= 0; i--) {
+                    const node = srcGroup[i];
+                    if (node.nodeType !== '_' && 
+                        JSON.stringify(node.color) === JSON.stringify(ball.color)) {
+                        ballsToMove.unshift(node);
+                    } else {
+                        break;
+                    }
+                }
+                
+                // Remove from source (remove only the balls we're moving)
+                for (let i = 0; i < ballsToMove.length; i++) {
+                    srcGroup.pop(); // Remove from end
+                }
+                
+                // Add to destination
+                dstGroup.push(...ballsToMove);
+            }
+        }
+        
+        return newState;
+    }
+
+    showStepState(stepIndex) {
+        if (!this.solutionStates || stepIndex >= this.solutionStates.length) return;
+        
+        const stepState = this.solutionStates[stepIndex];
+        const container = document.getElementById('stepStateVisualization');
+        
+        // Calculate remaining undo steps if this is a state with unknown blocks
+        const hasUnknown = stepState.groups && stepState.groups.some(group => 
+            group.some(node => node.nodeType === '?' || node.nodeType === '!')
+        );
+        const undoInfo = hasUnknown ? `<p><strong>Remaining Undo Steps:</strong> ${stepState.undoCount || 'N/A'}</p>` : '';
+        
+        const stepNumber = stepIndex === 0 ? 'Initial' : `After Step ${stepIndex}`;
+        container.innerHTML = `
+            <h4>Game State: ${stepNumber}</h4>
+            ${undoInfo}
+            <div id="stepGameVisualization"></div>
+            <div style="margin-top: 10px;">
+                <button onclick="makeStartingState(${stepIndex})" style="background-color: #2563eb; margin-right: 10px;">Make This Starting State</button>
+                <button onclick="clearStepVisualization()">Hide State</button>
+            </div>
+        `;
+        
+        // Visualize the step state
+        const stepVisualizer = new GameVisualizer('stepGameVisualization');
+        stepVisualizer.visualizeGameState(stepState);
+        
+        // Make functions globally available
+        window.clearStepVisualization = () => {
+            container.innerHTML = '';
+        };
+        
+        window.makeStartingState = (index) => {
+            this.makeStartingStateFromSolution(index);
+        };
+    }
+    
+    makeStartingStateFromSolution(stepIndex) {
+        if (!this.solutionStates || stepIndex >= this.solutionStates.length) return;
+        
+        const targetState = this.solutionStates[stepIndex];
+        
+        // Dispatch custom event to update the canvas editor
+        document.dispatchEvent(new CustomEvent('setStartingState', {
+            detail: targetState
+        }));
+        
+        // Clear the step visualization
+        window.clearStepVisualization();
+    }
+}
