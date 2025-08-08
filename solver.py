@@ -72,7 +72,8 @@ def solve(
                 if candidate_state is None:
                     candidate_state = current_search_state
                 else:
-                    if current_search_state.state_game.segments < current_search_state.state_game.segments:
+                    # Choose the state with fewer segments as the better candidate
+                    if current_search_state.state_game.segments < candidate_state.state_game.segments:
                         candidate_state = current_search_state
             else:
                 if state_game.is_meaningful_state:
