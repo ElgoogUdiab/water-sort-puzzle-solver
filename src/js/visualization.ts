@@ -1,5 +1,7 @@
 // Game visualization utilities
 
+import { NodeType } from './game.ts';
+
 export class GameVisualizer {
     container: HTMLElement;
 
@@ -24,13 +26,13 @@ export class GameVisualizer {
                 const node = group[j];
                 
                 // Skip EMPTY nodes
-                if (node.nodeType === '_') continue;
+                if (node.nodeType === NodeType.EMPTY) continue;
                 
                 const ball = document.createElement('div');
                 ball.className = 'ball';
                 ball.style.bottom = (j * 38 + 2) + 'px';
                 
-                if (node.nodeType === '?') {
+                if (node.nodeType === NodeType.UNKNOWN) {
                     ball.style.backgroundColor = '#000';
                     ball.style.color = '#fff';
                     ball.style.display = 'flex';
@@ -40,7 +42,7 @@ export class GameVisualizer {
                     ball.style.fontWeight = 'bold';
                     ball.textContent = '?';
                     ball.title = 'Unknown';
-                } else if (node.nodeType === '!') {
+                } else if (node.nodeType === NodeType.UNKNOWN_REVEALED) {
                     ball.style.backgroundColor = '#f0f0f0';
                     ball.style.color = '#666';
                     ball.style.display = 'flex';
@@ -169,7 +171,7 @@ export class SolutionVisualizer {
             // Find the top non-empty ball (skip EMPTY nodes)
             let topBallIndex = -1;
             for (let i = srcGroup.length - 1; i >= 0; i--) {
-                if (srcGroup[i].nodeType !== '_') {
+                if (srcGroup[i].nodeType !== NodeType.EMPTY) {
                     topBallIndex = i;
                     break;
                 }
@@ -182,7 +184,7 @@ export class SolutionVisualizer {
                 const ballsToMove = [];
                 for (let i = topBallIndex; i >= 0; i--) {
                     const node = srcGroup[i];
-                    if (node.nodeType !== '_' && 
+                    if (node.nodeType !== NodeType.EMPTY &&
                         JSON.stringify(node.color) === JSON.stringify(ball.color)) {
                         ballsToMove.unshift(node);
                     } else {
@@ -210,8 +212,8 @@ export class SolutionVisualizer {
         const container = document.getElementById('stepStateVisualization');
         
         // Calculate remaining undo steps if this is a state with unknown blocks
-        const hasUnknown = stepState.groups && stepState.groups.some(group => 
-            group.some(node => node.nodeType === '?' || node.nodeType === '!')
+        const hasUnknown = stepState.groups && stepState.groups.some(group =>
+            group.some(node => node.nodeType === NodeType.UNKNOWN || node.nodeType === NodeType.UNKNOWN_REVEALED)
         );
         const undoInfo = hasUnknown ? `<p><strong>Remaining Undo Steps:</strong> ${stepState.undoCount || 'N/A'}</p>` : '';
         
