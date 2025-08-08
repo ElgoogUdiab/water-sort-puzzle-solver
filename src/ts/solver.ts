@@ -1,6 +1,6 @@
 // Solver logic - TypeScript port of solver.py
 
-import { Game, GameNode, NodeType, GameMode, StepOp, UndoOp } from './game.js';
+import { Game, GameNode, NodeType, GameMode, StepOp, UndoOp } from './game.ts';
 import FastPriorityQueue from 'fastpriorityqueue';
 
 export class SearchState {
