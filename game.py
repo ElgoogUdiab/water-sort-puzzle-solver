@@ -167,7 +167,7 @@ class Game:
                     temp_result = [OperationStepForward(src, dst)]
                     break
                 
-                # Empty desitnation
+                # Empty destination
                 if len(dst_group) == 0:
                     temp_result.append(OperationStepForward(src, dst))
                     continue
