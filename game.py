@@ -158,7 +158,7 @@ class Game:
 
                 dst_group = self.groups[dst]
 
-                # Color mismatch
+                # Prevent moving an entire uniform-color group into an empty tube
                 if op_item.node_type == GameNodeType.KNOWN and len(set(node.color for node in src_group)) == 1 and len(dst_group) == 0:
                     continue
                     
