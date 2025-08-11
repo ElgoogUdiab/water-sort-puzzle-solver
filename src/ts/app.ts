@@ -41,16 +41,20 @@ class WaterSortApp {
         });
 
         document.getElementById('copyJson')!.addEventListener('click', () => {
-            const json = this.canvasEditor.exportToJSON();
+            const mode = Number((document.getElementById('mode') as HTMLInputElement).value) as GameMode;
+            const json = this.canvasEditor.exportToJSON(mode);
             navigator.clipboard.writeText(json);
         });
 
         document.getElementById('pasteJson')!.addEventListener('click', async () => {
+            let text = '';
             try {
-                const text = await navigator.clipboard.readText();
-                this.importFromJSON(text);
+                text = await navigator.clipboard.readText();
             } catch (err) {
-                console.error('Failed to paste puzzle JSON', err);
+                text = prompt('Paste puzzle JSON:') || '';
+            }
+            if (text) {
+                this.importFromJSON(text);
             }
         });
 
@@ -181,8 +185,17 @@ class WaterSortApp {
 
     importFromJSON(json: string): void {
         try {
-            const gameState = JSON.parse(json) as GameState;
-            this.setCanvasFromGameState(gameState);
+            const data = JSON.parse(json) as GameState & {cols?: number; rows?: number; mode?: GameMode};
+            if (typeof data.cols === 'number') {
+                (document.getElementById('cols') as HTMLInputElement).value = data.cols.toString();
+            }
+            if (typeof data.rows === 'number') {
+                (document.getElementById('rows') as HTMLInputElement).value = data.rows.toString();
+            }
+            if (typeof data.mode === 'number') {
+                (document.getElementById('mode') as HTMLInputElement).value = data.mode.toString();
+            }
+            this.setCanvasFromGameState(data);
         } catch (err) {
             console.error('Invalid puzzle JSON', err);
         }
