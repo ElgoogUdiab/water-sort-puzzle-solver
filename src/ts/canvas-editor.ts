@@ -241,7 +241,7 @@ export class CanvasEditor {
             groups.push(group);
         }
         
-        this.currentGameState = { groups };
+        this.currentGameState = { groups, capacity: this.H };
         
         // Trigger custom event for game state update
         this.canvas.dispatchEvent(new CustomEvent<GameState>('gamestatechange', {
@@ -278,7 +278,7 @@ export class CanvasEditor {
             }
             groups.push(g);
         }
-        return { groups };
+        return { groups, capacity: this.H };
     }
 
     exportToJSON(mode: GameMode): string {

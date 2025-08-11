@@ -141,7 +141,7 @@ class WaterSortApp {
         
         // Determine board dimensions from game state
         const cols = gameState.groups.length;
-        const rows = Math.max(...gameState.groups.map(g => g.length), 1);
+        const rows = gameState.capacity ?? Math.max(...gameState.groups.map(g => g.length), 1);
         
         // Update HTML inputs
         (document.getElementById('cols') as HTMLInputElement).value = cols.toString();
@@ -187,6 +187,7 @@ class WaterSortApp {
             }
             if (typeof data.rows === 'number') {
                 (document.getElementById('rows') as HTMLInputElement).value = data.rows.toString();
+                if (data.capacity === undefined) data.capacity = data.rows;
             }
             if (typeof data.mode === 'number') {
                 (document.getElementById('mode') as HTMLInputElement).value = data.mode.toString();
