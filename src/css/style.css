@@ -14,11 +14,19 @@ html, body {
     padding: 0 16px; 
 }
 
-.row { 
-    display: flex; 
-    gap: 16px; 
-    align-items: center; 
-    flex-wrap: wrap; 
+.row {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.canvas-wrapper {
+    overflow-x: auto;
+}
+
+.board-canvas {
+    touch-action: none;
 }
 
 .panel { 

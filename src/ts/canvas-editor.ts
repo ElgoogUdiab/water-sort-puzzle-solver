@@ -143,23 +143,24 @@ export class CanvasEditor {
 
     setupEventListeners(): void {
         this.canvas.addEventListener('contextmenu', (e: Event) => e.preventDefault());
+        this.canvas.style.touchAction = 'none';
 
         document.getElementById('eraseMode')?.addEventListener('change', (e: Event) => {
             this.eraseMode = (e.target as HTMLInputElement).checked;
         });
 
-        this.canvas.addEventListener('mousedown', (e: MouseEvent) => {
+        this.canvas.addEventListener('pointerdown', (e: PointerEvent) => {
             if (e.button === 2 || (e.button === 0 && this.eraseMode)) {
                 const rect = this.canvas.getBoundingClientRect();
                 const cx = Math.floor((e.clientX - rect.left) / this.S);
                 const cy = this.H - 1 - Math.floor((e.clientY - rect.top) / this.S);
                 this.isErasing = true;
                 this.eraseCell(cx, cy);
-            } else {
-                this.handleCanvasClick(e);
+            } else if (e.button === 0) {
+                this.handleCanvasPointer(e);
             }
         });
-        this.canvas.addEventListener('mousemove', (e: MouseEvent) => {
+        this.canvas.addEventListener('pointermove', (e: PointerEvent) => {
             if (this.isErasing) {
                 const rect = this.canvas.getBoundingClientRect();
                 const cx = Math.floor((e.clientX - rect.left) / this.S);
@@ -167,8 +168,9 @@ export class CanvasEditor {
                 this.eraseCell(cx, cy);
             }
         });
-        this.canvas.addEventListener('mouseup', () => { this.isErasing = false; });
-        this.canvas.addEventListener('mouseleave', () => { this.isErasing = false; });
+        this.canvas.addEventListener('pointerup', () => { this.isErasing = false; });
+        this.canvas.addEventListener('pointerleave', () => { this.isErasing = false; });
+        this.canvas.addEventListener('pointercancel', () => { this.isErasing = false; });
     }
 
     private eraseCell(cx: number, cy: number): void {
@@ -186,7 +188,7 @@ export class CanvasEditor {
         }
     }
 
-    handleCanvasClick(e: MouseEvent): void {
+    handleCanvasPointer(e: PointerEvent): void {
         if (e.button !== 0) return;
         const rect = this.canvas.getBoundingClientRect();
         const cx = Math.floor((e.clientX - rect.left) / this.S);
