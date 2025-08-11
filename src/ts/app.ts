@@ -84,29 +84,29 @@ class WaterSortApp {
         // Create a simple solvable puzzle manually
         const board = this.canvasEditor.board;
         const palette = this.canvasEditor.palette;
-        
+
         // Use the first three colors from the palette
-        const color1 = palette[0].rgb; // Orange
-        const color2 = palette[1].rgb; // Red
-        const color3 = palette[2].rgb; // Blue
-        
+        const color1 = palette[0].color; // Orange
+        const color2 = palette[1].color; // Red
+        const color3 = palette[2].color; // Blue
+
         // Tube 1: Color1-Color1-Color2-Color2 (bottom to top)
-        board[0][0] = {type: NodeType.KNOWN, color: [...color1]};
-        board[0][1] = {type: NodeType.KNOWN, color: [...color1]};
-        board[0][2] = {type: NodeType.KNOWN, color: [...color2]};
-        board[0][3] = {type: NodeType.KNOWN, color: [...color2]};
-        
+        board[0][0] = {type: NodeType.KNOWN, color: new Color(color1.toString())};
+        board[0][1] = {type: NodeType.KNOWN, color: new Color(color1.toString())};
+        board[0][2] = {type: NodeType.KNOWN, color: new Color(color2.toString())};
+        board[0][3] = {type: NodeType.KNOWN, color: new Color(color2.toString())};
+
         // Tube 2: Color3-Color3-Color1-Color1
-        board[1][0] = {type: NodeType.KNOWN, color: [...color3]};
-        board[1][1] = {type: NodeType.KNOWN, color: [...color3]};
-        board[1][2] = {type: NodeType.KNOWN, color: [...color1]};
-        board[1][3] = {type: NodeType.KNOWN, color: [...color1]};
-        
-        // Tube 3: Color2-Color2-Color3-Color3  
-        board[2][0] = {type: NodeType.KNOWN, color: [...color2]};
-        board[2][1] = {type: NodeType.KNOWN, color: [...color2]};
-        board[2][2] = {type: NodeType.KNOWN, color: [...color3]};
-        board[2][3] = {type: NodeType.KNOWN, color: [...color3]};
+        board[1][0] = {type: NodeType.KNOWN, color: new Color(color3.toString())};
+        board[1][1] = {type: NodeType.KNOWN, color: new Color(color3.toString())};
+        board[1][2] = {type: NodeType.KNOWN, color: new Color(color1.toString())};
+        board[1][3] = {type: NodeType.KNOWN, color: new Color(color1.toString())};
+
+        // Tube 3: Color2-Color2-Color3-Color3
+        board[2][0] = {type: NodeType.KNOWN, color: new Color(color2.toString())};
+        board[2][1] = {type: NodeType.KNOWN, color: new Color(color2.toString())};
+        board[2][2] = {type: NodeType.KNOWN, color: new Color(color3.toString())};
+        board[2][3] = {type: NodeType.KNOWN, color: new Color(color3.toString())};
         
         // Tube 4: Empty
         for (let r = 0; r < 4; r++) {
@@ -146,7 +146,7 @@ class WaterSortApp {
                 const node = group[r];
                 if (node.nodeType === NodeType.KNOWN) {
                     // Known node with color
-                    const color = this.hexToRgb(node.color!);
+                    const color = node.color ? new Color(node.color.toString()) : null;
                     this.canvasEditor.board[c][r] = {type: NodeType.KNOWN, color: color};
                 } else if (node.nodeType === NodeType.UNKNOWN || node.nodeType === NodeType.UNKNOWN_REVEALED) {
                     // Unknown nodes - represent as empty in canvas (will be interpreted as unknown by syncToGameState)
@@ -165,12 +165,6 @@ class WaterSortApp {
         this.canvasEditor.syncToGameState();
     }
     
-    hexToRgb(hex: string): Color {
-        if (!hex) return [0, 0, 0];
-        const h = hex.replace('#', '');
-        return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
-    }
-
     solveGame(): void {
         const debugMode = (document.getElementById('debugMode') as HTMLInputElement).checked;
         const searchDepth = parseInt((document.getElementById('searchDepth') as HTMLInputElement).value);
@@ -196,7 +190,7 @@ class WaterSortApp {
                     else if (node.nodeType === NodeType.UNKNOWN_REVEALED) nodeType = NodeType.UNKNOWN_REVEALED;
                     else if (node.nodeType === NodeType.EMPTY) nodeType = NodeType.EMPTY;
 
-                    const color = node.color ? this.hexToRgb(node.color) : null;
+                    const color = node.color ? new Color(node.color.toString()) : null;
                     return new GameNode(nodeType, [groupIndex, nodeIndex], color);
                 })
             );
