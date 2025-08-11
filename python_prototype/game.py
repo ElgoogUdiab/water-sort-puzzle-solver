@@ -311,7 +311,16 @@ class Game:
 
     @cached_property
     def _to_frozensets(self):
-        return frozenset(tuple(group) for group in self.groups)
+        processed_groups: list[tuple] = []
+        for group in self.groups:
+            processed_nodes = []
+            for node in group:
+                if node.node_type == GameNodeType.KNOWN:
+                    processed_nodes.append((node.node_type, node.color))
+                else:
+                    processed_nodes.append((node.node_type, node.color, node.original_pos))
+            processed_groups.append(tuple(processed_nodes))
+        return frozenset(processed_groups)
 
     @cached_property
     def _to_hashable(self):
