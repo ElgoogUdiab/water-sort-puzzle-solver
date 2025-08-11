@@ -25,6 +25,7 @@ export interface GameStateNode {
 
 export interface GameState {
     groups: GameStateNode[][];
+    capacity?: number;
     undoCount?: number;
 }
 

@@ -16,12 +16,12 @@ export class GameVisualizer {
 
         if (!gameState || !gameState.groups) return;
         
-        const maxHeight = Math.max(...gameState.groups.map(g => g.length), 1);
+        const capacity = gameState.capacity ?? Math.max(...gameState.groups.map(g => g.length), 1);
         
         for (let i = 0; i < gameState.groups.length; i++) {
             const tube = document.createElement('div');
             tube.className = 'tube';
-            tube.style.height = (maxHeight * 40 + 20) + 'px';
+            tube.style.height = (capacity * 40 + 20) + 'px';
             
             const group = gameState.groups[i];
             for (let j = 0; j < group.length; j++) {
@@ -165,6 +165,7 @@ export class SolutionVisualizer {
                     originalPos: [n.pos[0], n.pos[1]] as [number, number]
                 }))
             ),
+            capacity: game.capacity,
             undoCount: game.undoCount
         };
     }
