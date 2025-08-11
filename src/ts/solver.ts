@@ -76,7 +76,7 @@ export function solve(startState: SearchState, depth = 8, debug = false, originS
 
 
     // Min-heap comparator on SearchState.value (lexicographic ascending)
-    const pq = new FastPriorityQueue<SearchState>((a, b) => {
+    const pq = new FastPriorityQueue<SearchState>((a: SearchState, b: SearchState): boolean => {
         const av = a.value, bv = b.value;
         for (let i = 0; i < Math.min(av.length, bv.length); i++) {
             if (av[i] !== bv[i]) return av[i] < bv[i];
@@ -121,7 +121,7 @@ export function solve(startState: SearchState, depth = 8, debug = false, originS
                 const ops = currentSearchState.path;
                 return {
                     success: true,
-                    steps: ops.map(op => op.toString()),
+                    steps: ops.map((op: StepOp | UndoOp) => op.toString()),
                     searchedStates: searchedStateCount,
                     allStates: buildStateChain(originState, ops)
                 };
@@ -165,10 +165,10 @@ export function solve(startState: SearchState, depth = 8, debug = false, originS
 
         const path = currentSearchState.path;
         discoveredDict.set(canonicalStateKey(stateGame), [stateGame, stateGame.undoCount]);
-        const ops = stateGame.ops();
+        const ops: (StepOp | UndoOp)[] = stateGame.ops();
 
         if (debug) {
-            console.log(`Available operations: ${ops.length}`, ops.map(op => op.toString()));
+            console.log(`Available operations: ${ops.length}`, ops.map((op: StepOp | UndoOp) => op.toString()));
         }
 
         for (const op of ops) {
@@ -177,14 +177,14 @@ export function solve(startState: SearchState, depth = 8, debug = false, originS
     }
 
     if (candidateState !== null) {
-        const ops = candidateState.path;
-        return {
-            success: true, // Changed: when unknown blocks present, finding revealing steps is success
-            steps: ops.map(op => op.toString()),
-            searchedStates: searchedStateCount,
-            allStates: buildStateChain(originState, ops),
-            isPartialSolution: true // Indicate this reveals unknowns rather than solves completely
-        };
+            const ops = candidateState.path;
+            return {
+                success: true, // Changed: when unknown blocks present, finding revealing steps is success
+                steps: ops.map((op: StepOp | UndoOp) => op.toString()),
+                searchedStates: searchedStateCount,
+                allStates: buildStateChain(originState, ops),
+                isPartialSolution: true // Indicate this reveals unknowns rather than solves completely
+            };
     }
 
     return {

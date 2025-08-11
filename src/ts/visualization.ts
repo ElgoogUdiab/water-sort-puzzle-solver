@@ -175,9 +175,22 @@ export class SolutionVisualizer {
 
         // Initialize undo count if not present
         if (!currentState.undoCount) currentState.undoCount = 5;
+        const undoStack: GameState[] = [];
 
         for (const step of steps) {
+            if (step === "Undo") {
+                const prev = undoStack.pop();
+                if (prev) {
+                    currentState = JSON.parse(JSON.stringify(prev));
+                }
+                currentState.undoCount = Math.max(0, (currentState.undoCount || 5) - 1);
+                reveals.push(null);
+                states.push(JSON.parse(JSON.stringify(currentState)) as GameState);
+                continue;
+            }
+
             const prevState: GameState = JSON.parse(JSON.stringify(currentState));
+            undoStack.push(prevState);
             // Apply the step to get the next state
             currentState = this.applyStepToState(currentState, step);
 
@@ -203,17 +216,10 @@ export class SolutionVisualizer {
 
 
     applyStepToState(state: GameState, stepStr: string): GameState {
-        // Parse step like "1 -> 2" or "Undo"
-        if (stepStr === "Undo") {
-            // Decrement undo count
-            const newState: GameState = JSON.parse(JSON.stringify(state));
-            newState.undoCount = Math.max(0, (newState.undoCount || 5) - 1);
-            return newState;
-        }
-        
+        // Parse step like "1 -> 2"
         const match = stepStr.match(/(\d+) -> (\d+)/);
         if (!match) return state;
-        
+
         const srcIndex = parseInt(match[1]) - 1;  // Convert to 0-based
         const dstIndex = parseInt(match[2]) - 1;
         
@@ -263,7 +269,7 @@ export class SolutionVisualizer {
                 }
             }
         }
-        
+
         return newState;
     }
 
