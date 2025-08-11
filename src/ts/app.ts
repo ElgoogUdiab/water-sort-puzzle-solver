@@ -4,18 +4,7 @@ import { Game, GameNode } from './game.ts';
 import { solve, SearchState } from './solver.ts';
 import { CanvasEditor } from './canvas-editor.ts';
 import { GameVisualizer, SolutionVisualizer } from './visualization.ts';
-import { GameState, GameStateNode, NodeType, GameMode, Color } from './types.ts';
-
-function gameToGameState(game: Game): GameState {
-    const groups = game.groups.map(group =>
-        group.map(node => ({
-            nodeType: node.type,
-            color: node.color ? new Color(node.color.toString()) : null,
-            originalPos: [node.pos[0], node.pos[1]] as [number, number]
-        }))
-    ) as GameStateNode[][];
-    return { groups, undoCount: game.undoCount };
-}
+import { GameState, NodeType, GameMode, Color } from './types.ts';
 
 class WaterSortApp {
     canvasEditor: CanvasEditor;
@@ -239,19 +228,9 @@ class WaterSortApp {
             }
             
             const startState = new SearchState(game, []);
-            const result = solve(startState, searchDepth, debugMode);
-            
-            const states = result.allStates.map(gameToGameState);
+            const solvedState = solve(startState, searchDepth, debugMode);
 
-            const formattedResult = {
-                success: result.success,
-                steps: result.steps,
-                searchedStates: result.searchedStates,
-                isPartialSolution: result.isPartialSolution,
-                states
-            };
-
-            this.solutionVisualizer.displaySolution(formattedResult, this.canvasEditor.getGameState()!);
+            this.solutionVisualizer.displaySearchState(solvedState, game);
             
         } catch (error: unknown) {
             const err = error as Error;
