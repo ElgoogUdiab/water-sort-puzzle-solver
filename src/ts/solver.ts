@@ -1,6 +1,7 @@
 // Solver logic - TypeScript port of solver.py
 
 import { Game, StepOp, UndoOp } from './game.ts';
+import { NodeType } from './types.ts';
 import FastPriorityQueue from 'fastpriorityqueue';
 
 export class SearchState {
@@ -85,8 +86,16 @@ export function solve(startState: SearchState, depth = 8, debug = false, originS
     });
     pq.add(startState);
     function canonicalStateKey(stateGame: Game): string {
-        // Build groups as arrays of {t, c} ignoring positions
-        const groups = stateGame.groups.map(g => g.map(n => ({ t: n.type, c: n.color })));
+        // Build groups as arrays of node descriptors
+        const groups = stateGame.groups.map(g =>
+            g.map(n => {
+                const base: { t: NodeType; c: typeof n.color; p?: readonly [number, number] } = { t: n.type, c: n.color };
+                if (n.type === NodeType.UNKNOWN || n.type === NodeType.UNKNOWN_REVEALED) {
+                    base.p = n.pos;
+                }
+                return base;
+            })
+        );
         const groupStrings = groups.map(grp => {
             const items = grp.map(x => JSON.stringify(x));
             // 保持组内顺序，只对组列表排序以忽略顺序差异
