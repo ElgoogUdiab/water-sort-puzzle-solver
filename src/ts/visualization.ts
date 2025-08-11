@@ -82,6 +82,7 @@ interface DisplayResult {
     steps: string[];
     searchedStates: number;
     isPartialSolution?: boolean;
+    states?: GameState[];
 }
 
 export class SolutionVisualizer {
@@ -101,9 +102,14 @@ export class SolutionVisualizer {
                 ? '<p><em>This sequence reveals unknown blocks. Solve again after seeing the revealed blocks for a complete solution.</em></p>'
                 : '<p><em>Complete solution found!</em></p>';
 
-            const calc = this.calculateSolutionStates(result.steps, initialGameState);
-            this.solutionStates = calc.states;
-            this.revealSteps = calc.reveals;
+            if (result.states && result.states.length > 0) {
+                this.solutionStates = result.states;
+                this.revealSteps = this.computeRevealsFromStates(result.states);
+            } else {
+                const calc = this.calculateSolutionStates(result.steps, initialGameState);
+                this.solutionStates = calc.states;
+                this.revealSteps = calc.reveals;
+            }
 
             this.container.innerHTML = `
                 <div class='solution'>
@@ -138,6 +144,28 @@ export class SolutionVisualizer {
     }
     displayError(message: string): void {
         this.container.innerHTML = `<div class="error">${message}</div>`;
+    }
+
+    computeRevealsFromStates(states: GameState[]): ({col: number, row: number} | null)[] {
+        const reveals: ({col: number, row: number} | null)[] = [];
+        for (let i = 1; i < states.length; i++) {
+            const prevState = states[i - 1];
+            const currState = states[i];
+            let revealed: {col: number, row: number} | null = null;
+            for (let c = 0; c < currState.groups.length; c++) {
+                const prevGroup = prevState.groups[c] || [];
+                const currGroup = currState.groups[c] || [];
+                for (let r = 0; r < currGroup.length; r++) {
+                    const before = prevGroup[r];
+                    const after = currGroup[r];
+                    if (before && after && before.nodeType === NodeType.UNKNOWN && after.nodeType === NodeType.UNKNOWN_REVEALED) {
+                        revealed = { col: c + 1, row: r + 1 };
+                    }
+                }
+            }
+            reveals.push(revealed);
+        }
+        return reveals;
     }
 
     calculateSolutionStates(steps: string[], initialGameState: GameState): {states: GameState[]; reveals: ({col: number, row: number} | null)[]} {
