@@ -47,12 +47,13 @@ export class CanvasEditor {
     rebuildPalette(colorCount?: number): void {
         const numColorsInput = document.getElementById('numcolors') as HTMLInputElement | null;
         const n = colorCount ?? (numColorsInput ? parseInt(numColorsInput.value) : 3);
+        const count = Math.max(2, Math.min(30, n));
         const base = [
             '#D98336', '#B33C38', '#0026C9', '#DC687D', '#01E5A6',
             '#55A3E3', '#707070', '#662F8C', '#68A90F', '#663300',
             '#3A5312', '#FFE643'
         ];
-        this.palette = Array.from({length: n}, (_, i) => ({
+        this.palette = Array.from({length: count}, (_, i) => ({
             color: new Color(base[i % base.length]),
             target: this.H,
             remaining: this.H
@@ -96,8 +97,8 @@ export class CanvasEditor {
     }
 
     resize(width?: number, height?: number): void {
-        if (width !== undefined) this.W = Math.max(2, Math.min(24, width));
-        if (height !== undefined) this.H = Math.max(2, Math.min(12, height));
+        if (width !== undefined) this.W = Math.max(3, Math.min(30, width));
+        if (height !== undefined) this.H = Math.max(2, Math.min(20, height));
         
         this.canvas.width = this.W * this.S;
         this.canvas.height = this.H * this.S;
