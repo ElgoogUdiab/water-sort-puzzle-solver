@@ -10,11 +10,11 @@ export default defineConfig({
     host: true,
     port: 3000,
     open: false,
-    allowedHosts: 'all'
+    allowedHosts: ['water-sort-puzzle-solver.elgoogudiab.com']
   },
   preview: {
     host: true,
     port: 3000,
-    allowedHosts: 'all'
+    allowedHosts: ['water-sort-puzzle-solver.elgoogudiab.com']
   }
 })
