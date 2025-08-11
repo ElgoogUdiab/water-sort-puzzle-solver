@@ -1,9 +1,10 @@
 // Main application entry point
 
-import { Game, GameNode, NodeType, GameMode } from './game.ts';
+import { Game, GameNode, NodeType, GameMode, Color } from './game.ts';
 import { solve, SearchState } from './solver.ts';
 import { CanvasEditor } from './canvas-editor.ts';
 import { GameVisualizer, SolutionVisualizer } from './visualization.ts';
+import { GameState } from './types.ts';
 
 class WaterSortApp {
     canvasEditor: CanvasEditor;
@@ -19,44 +20,49 @@ class WaterSortApp {
         this.initialize();
     }
 
-    setupEventListeners() {
+    setupEventListeners(): void {
         // Canvas editor controls
-        document.getElementById('cols').addEventListener('input', (e) => {
-            this.canvasEditor.resize(parseInt(e.target.value), undefined);
+        (document.getElementById('cols') as HTMLInputElement).addEventListener('input', (e: Event) => {
+            const target = e.target as HTMLInputElement;
+            this.canvasEditor.resize(parseInt(target.value), undefined);
         });
 
-        document.getElementById('rows').addEventListener('input', (e) => {
-            this.canvasEditor.resize(undefined, parseInt(e.target.value));
+        (document.getElementById('rows') as HTMLInputElement).addEventListener('input', (e: Event) => {
+            const target = e.target as HTMLInputElement;
+            this.canvasEditor.resize(undefined, parseInt(target.value));
         });
 
-        document.getElementById('reset').addEventListener('click', () => {
+        document.getElementById('reset')!.addEventListener('click', () => {
             this.canvasEditor.reset();
         });
 
-        document.getElementById('rand').addEventListener('click', () => {
+        document.getElementById('rand')!.addEventListener('click', () => {
             this.canvasEditor.randomize();
         });
 
-        document.getElementById('numcolors').addEventListener('input', (e) => {
-            this.canvasEditor.rebuildPalette(parseInt(e.target.value));
+        (document.getElementById('numcolors') as HTMLInputElement).addEventListener('input', (e: Event) => {
+            const target = e.target as HTMLInputElement;
+            this.canvasEditor.rebuildPalette(parseInt(target.value));
         });
 
-        document.getElementById('solveBtn').addEventListener('click', () => {
+        document.getElementById('solveBtn')!.addEventListener('click', () => {
             this.solveGame();
         });
 
         // Listen for game state changes from canvas
-        document.getElementById('grid').addEventListener('gamestatechange', (e) => {
-            this.gameVisualizer.visualizeGameState(e.detail);
+        document.getElementById('grid')!.addEventListener('gamestatechange', (e: Event) => {
+            const detail = (e as CustomEvent<GameState>).detail;
+            this.gameVisualizer.visualizeGameState(detail);
         });
-        
+
         // Listen for setStartingState event from solution visualization
-        document.addEventListener('setStartingState', (e) => {
-            this.setCanvasFromGameState(e.detail);
+        document.addEventListener('setStartingState', (e: Event) => {
+            const detail = (e as CustomEvent<GameState>).detail;
+            this.setCanvasFromGameState(detail);
         });
     }
 
-    initialize() {
+    initialize(): void {
         // Start with a simple example puzzle
         // Need to wait for canvas editor to be fully initialized
         setTimeout(() => {
@@ -64,10 +70,10 @@ class WaterSortApp {
         }, 50);
     }
 
-    createSimpleExample() {
+    createSimpleExample(): void {
         // Update the HTML inputs first
-        document.getElementById('cols').value = 4;
-        document.getElementById('rows').value = 4;
+        (document.getElementById('cols') as HTMLInputElement).value = '4';
+        (document.getElementById('rows') as HTMLInputElement).value = '4';
         
         // Create a simple 4-tube, 4-height puzzle
         this.canvasEditor.resize(4, 4);
@@ -116,7 +122,7 @@ class WaterSortApp {
         this.canvasEditor.syncToGameState();
     }
     
-    setCanvasFromGameState(gameState) {
+    setCanvasFromGameState(gameState: GameState): void {
         if (!gameState || !gameState.groups) return;
         
         // Determine board dimensions from game state
@@ -140,7 +146,7 @@ class WaterSortApp {
                 const node = group[r];
                 if (node.nodeType === NodeType.KNOWN) {
                     // Known node with color
-                    const color = this.hexToRgb(node.color);
+                    const color = this.hexToRgb(node.color!);
                     this.canvasEditor.board[c][r] = {type: NodeType.KNOWN, color: color};
                 } else if (node.nodeType === NodeType.UNKNOWN || node.nodeType === NodeType.UNKNOWN_REVEALED) {
                     // Unknown nodes - represent as empty in canvas (will be interpreted as unknown by syncToGameState)
@@ -159,13 +165,13 @@ class WaterSortApp {
         this.canvasEditor.syncToGameState();
     }
     
-    hexToRgb(hex) {
+    hexToRgb(hex: string): Color {
         if (!hex) return [0, 0, 0];
         const h = hex.replace('#', '');
         return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
     }
 
-    solveGame() {
+    solveGame(): void {
         const debugMode = (document.getElementById('debugMode') as HTMLInputElement).checked;
         const searchDepth = parseInt((document.getElementById('searchDepth') as HTMLInputElement).value);
         const undoCount = parseInt((document.getElementById('undo') as HTMLInputElement).value);
@@ -190,7 +196,8 @@ class WaterSortApp {
                     else if (node.nodeType === NodeType.UNKNOWN_REVEALED) nodeType = NodeType.UNKNOWN_REVEALED;
                     else if (node.nodeType === NodeType.EMPTY) nodeType = NodeType.EMPTY;
 
-                    return new GameNode(nodeType, [groupIndex, nodeIndex], node.color);
+                    const color = node.color ? this.hexToRgb(node.color) : null;
+                    return new GameNode(nodeType, [groupIndex, nodeIndex], color);
                 })
             );
             
@@ -213,11 +220,12 @@ class WaterSortApp {
                 finalState: result.finalState
             };
             
-            this.solutionVisualizer.displaySolution(formattedResult, this.canvasEditor.getGameState());
+            this.solutionVisualizer.displaySolution(formattedResult, this.canvasEditor.getGameState()!);
             
-        } catch (error) {
-            console.error('Solver error:', error);
-            this.solutionVisualizer.displayError('Error: ' + error.message);
+        } catch (error: unknown) {
+            const err = error as Error;
+            console.error('Solver error:', err);
+            this.solutionVisualizer.displayError('Error: ' + err.message);
         }
     }
 }

@@ -1,6 +1,7 @@
 // Game visualization utilities
 
 import { NodeType } from './game.ts';
+import { GameState } from './types.ts';
 
 export class GameVisualizer {
     container: HTMLElement;
@@ -9,9 +10,9 @@ export class GameVisualizer {
         this.container = document.getElementById(containerId)!;
     }
 
-    visualizeGameState(gameState) {
+    visualizeGameState(gameState: GameState | null): void {
         this.container.innerHTML = '';
-        
+
         if (!gameState || !gameState.groups) return;
         
         const maxHeight = Math.max(...gameState.groups.map(g => g.length), 1);
@@ -77,16 +78,23 @@ export class GameVisualizer {
     }
 }
 
+interface DisplayResult {
+    success: boolean;
+    steps: string[];
+    searchedStates: number;
+    isPartialSolution?: boolean;
+}
+
 export class SolutionVisualizer {
     container: HTMLElement;
-    solutionStates: any[] | null = null;
+    solutionStates: GameState[] | null = null;
     revealSteps: ({col: number, row: number} | null)[] | null = null;
 
     constructor(resultContainerId: string) {
         this.container = document.getElementById(resultContainerId)!;
     }
 
-    displaySolution(result, initialGameState) {
+    displaySolution(result: DisplayResult, initialGameState: GameState): void {
         if (result.success) {
             const isPartial = result.isPartialSolution;
             const title = isPartial ? '🔍 Unknown Blocks Revealed!' : '✅ Solution Found!';
@@ -106,7 +114,7 @@ export class SolutionVisualizer {
                     ${description}
                     <p><em>Click on any step to see the game state at that point</em></p>
                     <ol class='steps' id='solutionSteps'>
-                        ${result.steps.map((step, index) => {
+                        ${result.steps.map((step: string, index: number) => {
                             const reveal = this.revealSteps ? this.revealSteps[index] : null;
                             const extra = reveal ? ` - reveal column ${reveal.col}, row ${reveal.row}` : '';
                             return `<li onclick='showStepState(${index + 1})' style='cursor: pointer; padding: 12px 16px; margin: 4px 0; border-radius: 8px;' onmouseover="this.style.backgroundColor='#1f2937'" onmouseout="this.style.backgroundColor='#0b1220'">${step}${extra}</li>`;
@@ -117,7 +125,7 @@ export class SolutionVisualizer {
             `;
 
             // Make showStepState globally available
-            window.showStepState = (stepIndex) => this.showStepState(stepIndex);
+            window.showStepState = (stepIndex: number) => this.showStepState(stepIndex);
 
         } else {
             this.container.innerHTML = `
@@ -129,20 +137,20 @@ export class SolutionVisualizer {
             `;
         }
     }
-    displayError(message) {
+    displayError(message: string): void {
         this.container.innerHTML = `<div class="error">${message}</div>`;
     }
 
-    calculateSolutionStates(steps, initialGameState) {
-        const states = [JSON.parse(JSON.stringify(initialGameState))]; // Initial state
+    calculateSolutionStates(steps: string[], initialGameState: GameState): {states: GameState[]; reveals: ({col: number, row: number} | null)[]} {
+        const states: GameState[] = [JSON.parse(JSON.stringify(initialGameState))]; // Initial state
         const reveals: ({col: number, row: number} | null)[] = [];
-        let currentState = JSON.parse(JSON.stringify(initialGameState));
+        let currentState: GameState = JSON.parse(JSON.stringify(initialGameState));
 
         // Initialize undo count if not present
         if (!currentState.undoCount) currentState.undoCount = 5;
 
         for (const step of steps) {
-            const prevState = JSON.parse(JSON.stringify(currentState));
+            const prevState: GameState = JSON.parse(JSON.stringify(currentState));
             // Apply the step to get the next state
             currentState = this.applyStepToState(currentState, step);
 
@@ -160,18 +168,18 @@ export class SolutionVisualizer {
                 }
             }
             reveals.push(revealed);
-            states.push(JSON.parse(JSON.stringify(currentState)));
+            states.push(JSON.parse(JSON.stringify(currentState)) as GameState);
         }
 
         return {states, reveals};
     }
-        
-    
-    applyStepToState(state, stepStr) {
+
+
+    applyStepToState(state: GameState, stepStr: string): GameState {
         // Parse step like "1 -> 2" or "Undo"
         if (stepStr === "Undo") {
             // Decrement undo count
-            const newState = JSON.parse(JSON.stringify(state));
+            const newState: GameState = JSON.parse(JSON.stringify(state));
             newState.undoCount = Math.max(0, (newState.undoCount || 5) - 1);
             return newState;
         }
@@ -182,7 +190,7 @@ export class SolutionVisualizer {
         const srcIndex = parseInt(match[1]) - 1;  // Convert to 0-based
         const dstIndex = parseInt(match[2]) - 1;
         
-        const newState = JSON.parse(JSON.stringify(state));
+        const newState: GameState = JSON.parse(JSON.stringify(state));
         const srcGroup = newState.groups[srcIndex];
         const dstGroup = newState.groups[dstIndex];
         
@@ -200,7 +208,7 @@ export class SolutionVisualizer {
                 const ball = srcGroup[topBallIndex];
                 
                 // For normal mode, move all consecutive balls of same color from top
-                const ballsToMove = [];
+                const ballsToMove: any[] = [];
                 for (let i = topBallIndex; i >= 0; i--) {
                     const node = srcGroup[i];
                     if (node.nodeType !== NodeType.EMPTY &&
@@ -232,11 +240,11 @@ export class SolutionVisualizer {
         return newState;
     }
 
-    showStepState(stepIndex) {
+    showStepState(stepIndex: number): void {
         if (!this.solutionStates || stepIndex >= this.solutionStates.length) return;
-        
+
         const stepState = this.solutionStates[stepIndex];
-        const container = document.getElementById('stepStateVisualization');
+        const container = document.getElementById('stepStateVisualization') as HTMLElement;
         
         // Calculate remaining undo steps if this is a state with unknown blocks
         const hasUnknown = stepState.groups && stepState.groups.some(group =>
@@ -263,23 +271,30 @@ export class SolutionVisualizer {
         window.clearStepVisualization = () => {
             container.innerHTML = '';
         };
-        
-        window.makeStartingState = (index) => {
+
+        window.makeStartingState = (index: number) => {
             this.makeStartingStateFromSolution(index);
         };
     }
-    
-    makeStartingStateFromSolution(stepIndex) {
+    makeStartingStateFromSolution(stepIndex: number): void {
         if (!this.solutionStates || stepIndex >= this.solutionStates.length) return;
-        
+
         const targetState = this.solutionStates[stepIndex];
-        
+
         // Dispatch custom event to update the canvas editor
-        document.dispatchEvent(new CustomEvent('setStartingState', {
+        document.dispatchEvent(new CustomEvent<GameState>('setStartingState', {
             detail: targetState
         }));
-        
+
         // Clear the step visualization
         window.clearStepVisualization();
+    }
+}
+
+declare global {
+    interface Window {
+        showStepState: (stepIndex: number) => void;
+        clearStepVisualization: () => void;
+        makeStartingState: (index: number) => void;
     }
 }

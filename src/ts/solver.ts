@@ -1,6 +1,6 @@
 // Solver logic - TypeScript port of solver.py
 
-import { Game, GameNode, NodeType, GameMode, StepOp, UndoOp } from './game.ts';
+import { Game, StepOp, UndoOp } from './game.ts';
 import FastPriorityQueue from 'fastpriorityqueue';
 
 export class SearchState {
@@ -34,7 +34,7 @@ function isAMoreValueableThanB(a: SearchState, b: SearchState): boolean {
     return a.path.length < b.path.length;
 }
 
-interface SolveResult {
+export interface SolveResult {
     success: boolean;
     steps: string[];
     searchedStates: number;
@@ -57,8 +57,8 @@ export function solve(startState: SearchState, depth = 8, debug = false): SolveR
     }
     
     
-    const discoveredDict = new Map();
-    let candidateState = null;
+    const discoveredDict = new Map<string, [Game, number]>();
+    let candidateState: SearchState | null = null;
     let candidateSearchStateCount = Infinity;
     
     let searchedStateCount = 0;
@@ -89,7 +89,7 @@ function canonicalStateKey(stateGame: Game): string {
 }
     
     while (!pq.isEmpty()) {
-        const currentSearchState = pq.poll();
+        const currentSearchState = pq.poll()!;
         const stateGame = currentSearchState.stateGame;
         
         const discovered = discoveredDict.get(canonicalStateKey(stateGame));
@@ -142,7 +142,7 @@ function canonicalStateKey(stateGame: Game): string {
                     }
                 }
                 
-                if (searchedStateCount > 2 * candidateSearchStateCount) {
+                if (candidateState && searchedStateCount > 2 * candidateSearchStateCount) {
                     if (debug) {
                         console.log(`Too long since last candidate state update. Start search from last candidate state`);
                     }

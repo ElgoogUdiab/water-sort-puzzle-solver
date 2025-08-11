@@ -1,6 +1,7 @@
 // Canvas-based game editor
 
 import { NodeType } from './game.ts';
+import { GameState, GameStateNode, BoardCell, PaletteColor } from './types.ts';
 
 export class CanvasEditor {
     canvas: HTMLCanvasElement;
@@ -9,10 +10,10 @@ export class CanvasEditor {
     W: number;
     H: number;
     S: number;
-    board: Array<Array<{type: NodeType, color: number[] | null}>>;
-    palette: Array<{rgb: number[], target: number, remaining: number}>;
+    board: BoardCell[][];
+    palette: PaletteColor[];
     activeColorIndex: number;
-    currentGameState: any;
+    currentGameState: GameState | null;
 
     constructor(canvasId: string, paletteId: string, options: {width?: number, height?: number} = {}) {
         this.canvas = document.getElementById(canvasId) as HTMLCanvasElement;
@@ -33,27 +34,27 @@ export class CanvasEditor {
         this.resize();
     }
     
-    createBoard(w, h) {
+    createBoard(w: number, h: number): BoardCell[][] {
         return Array.from(
-            {length: w},
-            () => Array.from({length: h}, () => ({type: NodeType.EMPTY, color: null}))
+            { length: w },
+            () => Array.from({ length: h }, () => ({ type: NodeType.EMPTY, color: null }))
         );
     }
-    
-    hexToRgb(hex) { 
-        const h = hex.replace('#', ''); 
-        return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)]; 
-    }
-    
-    rgbToHex(rgb) { 
-        if (!rgb || !Array.isArray(rgb) || rgb.length < 3) return '#000000';
-        const [r, g, b] = rgb;
-        return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join(''); 
+
+    hexToRgb(hex: string): number[] {
+        const h = hex.replace('#', '');
+        return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
     }
 
-    rebuildPalette(colorCount) {
-        const numColorsInput = document.getElementById('numcolors');
-        const n = colorCount || (numColorsInput ? parseInt(numColorsInput.value) : 3);
+    rgbToHex(rgb: number[]): string {
+        if (!rgb || !Array.isArray(rgb) || rgb.length < 3) return '#000000';
+        const [r, g, b] = rgb;
+        return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
+    }
+
+    rebuildPalette(colorCount?: number): void {
+        const numColorsInput = document.getElementById('numcolors') as HTMLInputElement | null;
+        const n = colorCount ?? (numColorsInput ? parseInt(numColorsInput.value) : 3);
         const base = [
             '#D98336', '#B33C38', '#0026C9', '#DC687D', '#01E5A6',
             '#55A3E3', '#707070', '#662F8C', '#68A90F', '#663300',
@@ -69,7 +70,7 @@ export class CanvasEditor {
         this.renderPalette();
     }
 
-    recalcPaletteRemaining() {
+    recalcPaletteRemaining(): void {
         for (const p of this.palette) { p.remaining = p.target; }
         for (let c = 0; c < this.W; c++) {
             for (let r = 0; r < this.H; r++) {
@@ -82,7 +83,7 @@ export class CanvasEditor {
         }
     }
 
-    renderPalette() {
+    renderPalette(): void {
         this.paletteEl.innerHTML = '';
         this.palette.forEach((p, idx) => {
             const sw = document.createElement('div');
@@ -91,7 +92,7 @@ export class CanvasEditor {
             
             const badge = document.createElement('span');
             badge.className = 'badge';
-            badge.textContent = p.remaining;
+            badge.textContent = p.remaining.toString();
             sw.appendChild(badge);
             
             sw.onclick = () => { 
@@ -102,7 +103,7 @@ export class CanvasEditor {
         });
     }
 
-    resize(width, height) {
+    resize(width?: number, height?: number): void {
         if (width !== undefined) this.W = Math.max(2, Math.min(24, width));
         if (height !== undefined) this.H = Math.max(2, Math.min(12, height));
         
@@ -119,7 +120,7 @@ export class CanvasEditor {
         this.draw();
     }
 
-    draw() {
+    draw(): void {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         for (let c = 0; c < this.W; c++) {
             for (let r = 0; r < this.H; r++) {
@@ -149,12 +150,12 @@ export class CanvasEditor {
         }
     }
 
-    setupEventListeners() {
-        this.canvas.addEventListener('contextmenu', e => e.preventDefault());
-        this.canvas.addEventListener('mousedown', e => this.handleCanvasClick(e));
+    setupEventListeners(): void {
+        this.canvas.addEventListener('contextmenu', (e: Event) => e.preventDefault());
+        this.canvas.addEventListener('mousedown', (e: MouseEvent) => this.handleCanvasClick(e));
     }
 
-    handleCanvasClick(e) {
+    handleCanvasClick(e: MouseEvent): void {
         const rect = this.canvas.getBoundingClientRect();
         const cx = Math.floor((e.clientX - rect.left) / this.S);
         const cy = this.H - 1 - Math.floor((e.clientY - rect.top) / this.S);
@@ -186,7 +187,7 @@ export class CanvasEditor {
         this.syncToGameState();
     }
 
-    reset() {
+    reset(): void {
         this.board = this.createBoard(this.W, this.H);
         this.recalcPaletteRemaining();
         this.renderPalette();
@@ -194,7 +195,7 @@ export class CanvasEditor {
         this.syncToGameState();
     }
 
-    randomize() {
+    randomize(): void {
         // Typical setup: fill N-2 tubes with H of each color
         const n = Math.max(1, Math.min(this.W - 2, this.palette.length || Math.max(2, this.W - 2)));
         if (!this.palette.length) this.rebuildPalette();
@@ -228,11 +229,11 @@ export class CanvasEditor {
         this.syncToGameState();
     }
 
-    syncToGameState() {
+    syncToGameState(): void {
         // Update currentGameState from canvas
-        const groups = [];
+        const groups: GameStateNode[][] = [];
         for (let c = 0; c < this.W; c++) {
-            const group = [];
+            const group: GameStateNode[] = [];
             for (let r = 0; r < this.H; r++) {
                 const cell = this.board[c][r];
                 if (cell.type === NodeType.EMPTY) {
@@ -241,9 +242,9 @@ export class CanvasEditor {
                     if (hasKnownAbove) {
                         // Blank block with known blocks above = unknown block
                         group.push({
-                            nodeType: NodeType.UNKNOWN,
-                            color: null,
-                            originalPos: [c, r]
+                          nodeType: NodeType.UNKNOWN,
+                          color: null,
+                          originalPos: [c, r]
                         });
                     }
                     // Skip empty blocks with no known blocks above
@@ -261,20 +262,20 @@ export class CanvasEditor {
         this.currentGameState = { groups };
         
         // Trigger custom event for game state update
-        this.canvas.dispatchEvent(new CustomEvent('gamestatechange', { 
-            detail: this.currentGameState 
+        this.canvas.dispatchEvent(new CustomEvent<GameState>('gamestatechange', {
+            detail: this.currentGameState
         }));
     }
 
-    getGameState() {
+    getGameState(): GameState | null {
         return this.currentGameState;
     }
 
     // Convert to solver format
-    toSolverFormat() {
-        const groups = [];
+    toSolverFormat(): GameState {
+        const groups: GameStateNode[][] = [];
         for (let c = 0; c < this.board.length; c++) {
-            const g = [];
+            const g: GameStateNode[] = [];
             for (let r = 0; r < this.board[0].length; r++) {
                 const cell = this.board[c][r];
                 if (cell.type === NodeType.EMPTY) {
