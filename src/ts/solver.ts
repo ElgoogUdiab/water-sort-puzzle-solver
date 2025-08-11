@@ -35,46 +35,20 @@ function compSearchState(a: SearchState, b: SearchState): boolean {
     return a.path.length < b.path.length;
 }
 
-function buildStateChain(start: Game, ops: (StepOp | UndoOp)[]): Game[] {
-    const states: Game[] = [start];
-    let current = start;
-    for (const op of ops) {
-        current = current.apply(op);
-        states.push(current);
-    }
-    return states;
-}
-
-export interface SolveResult {
-    success: boolean;
-    steps: string[];
-    searchedStates: number;
-    allStates: Game[];
-    isPartialSolution?: boolean;
-}
-
-export function solve(startState: SearchState, depth = 8, debug = false, originState: Game | null = null): SolveResult {
-    if (!originState) originState = startState.stateGame;
+export function solve(startState: SearchState, depth = 8, debug = false): SearchState {
     // Check if the starting state is already winning
     if (!startState.stateGame.containsUnknown && startState.stateGame.winning) {
         if (debug) {
             console.log('Starting state is already winning!');
         }
-        return {
-            success: true,
-            steps: [],
-            searchedStates: 1,
-            allStates: buildStateChain(originState, [])
-        };
+        return startState;
     }
-
 
     const discoveredDict = new Map<string, [Game, number]>();
     let candidateState: SearchState | null = null;
     let candidateSearchStateCount = Infinity;
 
     let searchedStateCount = 0;
-
 
     // Min-heap comparator on SearchState.value (lexicographic ascending)
     const pq = new FastPriorityQueue<SearchState>((a: SearchState, b: SearchState): boolean => {
@@ -125,13 +99,7 @@ export function solve(startState: SearchState, depth = 8, debug = false, originS
 
         if (!startState.stateGame.containsUnknown) {
             if (stateGame.winning) {
-                const ops = currentSearchState.path;
-                return {
-                    success: true,
-                    steps: ops.map((op: StepOp | UndoOp) => op.toString()),
-                    searchedStates: searchedStateCount,
-                    allStates: buildStateChain(originState, ops)
-                };
+                return currentSearchState;
             }
         } else {
             if (depth === 0) {
@@ -165,7 +133,7 @@ export function solve(startState: SearchState, depth = 8, debug = false, originS
                     if (debug) {
                         console.log(`Too long since last candidate state update. Start search from last candidate state`);
                     }
-                    return solve(candidateState, depth - 1, debug, originState);
+                    return solve(candidateState, depth - 1, debug);
                 }
             }
         }
@@ -184,20 +152,8 @@ export function solve(startState: SearchState, depth = 8, debug = false, originS
     }
 
     if (candidateState !== null) {
-            const ops = candidateState.path;
-            return {
-                success: true, // Changed: when unknown blocks present, finding revealing steps is success
-                steps: ops.map((op: StepOp | UndoOp) => op.toString()),
-                searchedStates: searchedStateCount,
-                allStates: buildStateChain(originState, ops),
-                isPartialSolution: true // Indicate this reveals unknowns rather than solves completely
-            };
+        return candidateState;
     }
 
-    return {
-        success: false,
-        steps: [],
-        searchedStates: searchedStateCount,
-        allStates: buildStateChain(originState, [])
-    };
+    return startState;
 }
