@@ -1,6 +1,6 @@
 // Canvas-based game editor
 
-import { NodeType, GameState, GameStateNode, BoardCell, PaletteColor, Color } from './types.ts';
+import { NodeType, GameState, GameStateNode, BoardCell, PaletteColor, Color, GameMode } from './types.ts';
 
 export class CanvasEditor {
     canvas: HTMLCanvasElement;
@@ -315,7 +315,13 @@ export class CanvasEditor {
         return { groups };
     }
 
-    exportToJSON(): string {
-        return JSON.stringify(this.toSolverFormat());
+    exportToJSON(mode: GameMode): string {
+        const data = {
+            cols: this.W,
+            rows: this.H,
+            mode,
+            groups: this.toSolverFormat().groups
+        };
+        return JSON.stringify(data);
     }
 }
