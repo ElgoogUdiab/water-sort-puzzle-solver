@@ -1,7 +1,6 @@
 // Game visualization utilities
 
-import { NodeType } from './game.ts';
-import { GameState } from './types.ts';
+import { NodeType, GameState } from './types.ts';
 
 export class GameVisualizer {
     container: HTMLElement;

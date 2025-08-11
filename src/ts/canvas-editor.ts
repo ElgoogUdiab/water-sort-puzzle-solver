@@ -1,6 +1,6 @@
 // Canvas-based game editor
 
-import { NodeType } from './game.ts';
+import { NodeType } from './types.ts';
 import { GameState, GameStateNode, BoardCell, PaletteColor } from './types.ts';
 
 export class CanvasEditor {
