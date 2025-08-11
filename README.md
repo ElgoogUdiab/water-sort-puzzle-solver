@@ -8,6 +8,7 @@ An interactive web application for creating and solving Water Sort puzzles with 
 - **🎯 Smart Color Palette**: Automatic color management with remaining piece tracking
 - **🧠 Intelligent Solver**: TypeScript implementation matching the Python algorithm exactly
 - **📊 Solution Visualization**: Click on solution steps to see board states
+- **🖼️ State Snapshots**: Solver returns JSON snapshots of each state along the solution path for direct visualization
 - **🎮 Multiple Game Modes**: Normal, No-combo, Queue (FIFO) modes
 - **🎲 Random Puzzle Generator**: Create randomized puzzles for testing
 - **📱 Responsive Design**: Modern dark theme that works on all devices

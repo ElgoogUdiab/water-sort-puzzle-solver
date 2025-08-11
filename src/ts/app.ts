@@ -205,15 +205,16 @@ class WaterSortApp {
             
             const startState = new SearchState(game, []);
             const result = solve(startState, searchDepth, debugMode);
-            
+
             const formattedResult = {
                 success: result.success,
                 steps: result.steps,
                 searchedStates: result.searchedStates,
-                finalState: result.finalState
+                isPartialSolution: result.isPartialSolution,
+                stateSnapshots: result.stateSnapshots
             };
-            
-            this.solutionVisualizer.displaySolution(formattedResult, this.canvasEditor.getGameState());
+
+            this.solutionVisualizer.displaySolution(formattedResult);
             
         } catch (error) {
             console.error('Solver error:', error);

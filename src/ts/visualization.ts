@@ -86,7 +86,7 @@ export class SolutionVisualizer {
         this.container = document.getElementById(resultContainerId)!;
     }
 
-    displaySolution(result, initialGameState) {
+    displaySolution(result) {
         if (result.success) {
             const isPartial = result.isPartialSolution;
             const title = isPartial ? '🔍 Unknown Blocks Revealed!' : '✅ Solution Found!';
@@ -94,9 +94,8 @@ export class SolutionVisualizer {
                 ? '<p><em>This sequence reveals unknown blocks. Solve again after seeing the revealed blocks for a complete solution.</em></p>'
                 : '<p><em>Complete solution found!</em></p>';
 
-            const calc = this.calculateSolutionStates(result.steps, initialGameState);
-            this.solutionStates = calc.states;
-            this.revealSteps = calc.reveals;
+            this.solutionStates = result.stateSnapshots || [];
+            this.revealSteps = this.calculateRevealSteps(this.solutionStates);
 
             this.container.innerHTML = `
                 <div class='solution'>
@@ -129,24 +128,16 @@ export class SolutionVisualizer {
             `;
         }
     }
+
     displayError(message) {
         this.container.innerHTML = `<div class="error">${message}</div>`;
     }
 
-    calculateSolutionStates(steps, initialGameState) {
-        const states = [JSON.parse(JSON.stringify(initialGameState))]; // Initial state
+    calculateRevealSteps(states) {
         const reveals: ({col: number, row: number} | null)[] = [];
-        let currentState = JSON.parse(JSON.stringify(initialGameState));
-
-        // Initialize undo count if not present
-        if (!currentState.undoCount) currentState.undoCount = 5;
-
-        for (const step of steps) {
-            const prevState = JSON.parse(JSON.stringify(currentState));
-            // Apply the step to get the next state
-            currentState = this.applyStepToState(currentState, step);
-
-            // Detect newly revealed unknown node
+        for (let i = 1; i < states.length; i++) {
+            const prevState = states[i - 1];
+            const currentState = states[i];
             let revealed: {col: number, row: number} | null = null;
             for (let c = 0; c < currentState.groups.length; c++) {
                 const prevGroup = prevState.groups[c] || [];
@@ -160,76 +151,8 @@ export class SolutionVisualizer {
                 }
             }
             reveals.push(revealed);
-            states.push(JSON.parse(JSON.stringify(currentState)));
         }
-
-        return {states, reveals};
-    }
-        
-    
-    applyStepToState(state, stepStr) {
-        // Parse step like "1 -> 2" or "Undo"
-        if (stepStr === "Undo") {
-            // Decrement undo count
-            const newState = JSON.parse(JSON.stringify(state));
-            newState.undoCount = Math.max(0, (newState.undoCount || 5) - 1);
-            return newState;
-        }
-        
-        const match = stepStr.match(/(\d+) -> (\d+)/);
-        if (!match) return state;
-        
-        const srcIndex = parseInt(match[1]) - 1;  // Convert to 0-based
-        const dstIndex = parseInt(match[2]) - 1;
-        
-        const newState = JSON.parse(JSON.stringify(state));
-        const srcGroup = newState.groups[srcIndex];
-        const dstGroup = newState.groups[dstIndex];
-        
-        if (srcGroup && srcGroup.length > 0) {
-            // Find the top non-empty ball (skip EMPTY nodes)
-            let topBallIndex = -1;
-            for (let i = srcGroup.length - 1; i >= 0; i--) {
-                if (srcGroup[i].nodeType !== NodeType.EMPTY) {
-                    topBallIndex = i;
-                    break;
-                }
-            }
-            
-            if (topBallIndex >= 0) {
-                const ball = srcGroup[topBallIndex];
-                
-                // For normal mode, move all consecutive balls of same color from top
-                const ballsToMove = [];
-                for (let i = topBallIndex; i >= 0; i--) {
-                    const node = srcGroup[i];
-                    if (node.nodeType !== NodeType.EMPTY &&
-                        JSON.stringify(node.color) === JSON.stringify(ball.color)) {
-                        ballsToMove.unshift(node);
-                    } else {
-                        break;
-                    }
-                }
-                
-                // Remove from source (remove only the balls we're moving)
-                for (let i = 0; i < ballsToMove.length; i++) {
-                    srcGroup.pop(); // Remove from end
-                }
-                
-                // Add to destination
-                dstGroup.push(...ballsToMove);
-
-                // Reveal unknown if exposed at top of source
-                if (srcGroup.length > 0) {
-                    const top = srcGroup[srcGroup.length - 1];
-                    if (top.nodeType === NodeType.UNKNOWN) {
-                        top.nodeType = NodeType.UNKNOWN_REVEALED;
-                    }
-                }
-            }
-        }
-        
-        return newState;
+        return reveals;
     }
 
     showStepState(stepIndex) {

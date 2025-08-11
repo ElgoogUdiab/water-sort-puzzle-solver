@@ -1,6 +1,6 @@
 // Solver logic - TypeScript port of solver.py
 
-import { Game, GameNode, NodeType, GameMode, StepOp, UndoOp } from './game.ts';
+import { Game, StepOp, UndoOp } from './game.ts';
 import FastPriorityQueue from 'fastpriorityqueue';
 
 export class SearchState {
@@ -34,11 +34,33 @@ function isAMoreValueableThanB(a: SearchState, b: SearchState): boolean {
     return a.path.length < b.path.length;
 }
 
+function serializeGameState(game: Game) {
+    return {
+        groups: game.groups.map(g => g.map(n => ({ nodeType: n.type, color: n.color }))),
+        undoCount: game.undoCount
+    };
+}
+
+function gatherSnapshots(finalGame: Game): any[] {
+    const snapshots: any[] = [];
+    let current: Game | null = finalGame;
+    while (current) {
+        snapshots.push(serializeGameState(current));
+        current = current.prev;
+    }
+    return snapshots.reverse();
+}
+
 interface SolveResult {
     success: boolean;
     steps: string[];
     searchedStates: number;
     finalState: Game;
+    /**
+     * Serialized snapshots of each state along the chosen path, including the initial state.
+     * These objects contain only JSON-friendly data and can be used directly by the visualizer.
+     */
+    stateSnapshots: any[];
     isPartialSolution?: boolean;
 }
 
@@ -52,7 +74,8 @@ export function solve(startState: SearchState, depth = 8, debug = false): SolveR
             success: true,
             steps: [],
             searchedStates: 1,
-            finalState: startState.stateGame
+            finalState: startState.stateGame,
+            stateSnapshots: [serializeGameState(startState.stateGame)]
         };
     }
     
@@ -111,7 +134,8 @@ function canonicalStateKey(stateGame: Game): string {
                     success: true,
                     steps: currentSearchState.path.map(op => op.toString()),
                     searchedStates: searchedStateCount,
-                    finalState: stateGame
+                    finalState: stateGame,
+                    stateSnapshots: gatherSnapshots(stateGame)
                 };
             }
         } else {
@@ -170,14 +194,16 @@ function canonicalStateKey(stateGame: Game): string {
             steps: candidateState.path.map(op => op.toString()),
             searchedStates: searchedStateCount,
             finalState: candidateState.stateGame,
+            stateSnapshots: gatherSnapshots(candidateState.stateGame),
             isPartialSolution: true // Indicate this reveals unknowns rather than solves completely
         };
     }
-    
+
     return {
         success: false,
         steps: [],
         searchedStates: searchedStateCount,
-        finalState: startState.stateGame
+        finalState: startState.stateGame,
+        stateSnapshots: [serializeGameState(startState.stateGame)]
     };
 }
