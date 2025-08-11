@@ -314,4 +314,8 @@ export class CanvasEditor {
         }
         return { groups };
     }
+
+    exportToJSON(): string {
+        return JSON.stringify(this.toSolverFormat());
+    }
 }

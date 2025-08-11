@@ -51,6 +51,20 @@ class WaterSortApp {
             this.canvasEditor.randomize();
         });
 
+        document.getElementById('copyJson')!.addEventListener('click', () => {
+            const json = this.canvasEditor.exportToJSON();
+            navigator.clipboard.writeText(json);
+        });
+
+        document.getElementById('pasteJson')!.addEventListener('click', async () => {
+            try {
+                const text = await navigator.clipboard.readText();
+                this.importFromJSON(text);
+            } catch (err) {
+                console.error('Failed to paste puzzle JSON', err);
+            }
+        });
+
         (document.getElementById('numcolors') as HTMLInputElement).addEventListener('input', (e: Event) => {
             const target = e.target as HTMLInputElement;
             this.canvasEditor.rebuildPalette(parseInt(target.value));
@@ -175,7 +189,16 @@ class WaterSortApp {
         this.canvasEditor.draw();
         this.canvasEditor.syncToGameState();
     }
-    
+
+    importFromJSON(json: string): void {
+        try {
+            const gameState = JSON.parse(json) as GameState;
+            this.setCanvasFromGameState(gameState);
+        } catch (err) {
+            console.error('Invalid puzzle JSON', err);
+        }
+    }
+
     solveGame(): void {
         const debugMode = (document.getElementById('debugMode') as HTMLInputElement).checked;
         const searchDepth = parseInt((document.getElementById('searchDepth') as HTMLInputElement).value);
