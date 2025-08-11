@@ -13,6 +13,7 @@ export class CanvasEditor {
     palette: PaletteColor[];
     activeColorIndex: number;
     currentGameState: GameState | null;
+    isErasing: boolean;
 
     constructor(canvasId: string, paletteId: string, options: {width?: number, height?: number} = {}) {
         this.canvas = document.getElementById(canvasId) as HTMLCanvasElement;
@@ -27,6 +28,7 @@ export class CanvasEditor {
         this.palette = [];
         this.activeColorIndex = 0;
         this.currentGameState = null;
+        this.isErasing = false;
         
         this.setupEventListeners();
         this.rebuildPalette();
@@ -139,36 +141,63 @@ export class CanvasEditor {
 
     setupEventListeners(): void {
         this.canvas.addEventListener('contextmenu', (e: Event) => e.preventDefault());
-        this.canvas.addEventListener('mousedown', (e: MouseEvent) => this.handleCanvasClick(e));
+        this.canvas.addEventListener('mousedown', (e: MouseEvent) => {
+            if (e.button === 2) {
+                const rect = this.canvas.getBoundingClientRect();
+                const cx = Math.floor((e.clientX - rect.left) / this.S);
+                const cy = this.H - 1 - Math.floor((e.clientY - rect.top) / this.S);
+                this.isErasing = true;
+                this.eraseCell(cx, cy);
+            } else {
+                this.handleCanvasClick(e);
+            }
+        });
+        this.canvas.addEventListener('mousemove', (e: MouseEvent) => {
+            if (this.isErasing) {
+                const rect = this.canvas.getBoundingClientRect();
+                const cx = Math.floor((e.clientX - rect.left) / this.S);
+                const cy = this.H - 1 - Math.floor((e.clientY - rect.top) / this.S);
+                this.eraseCell(cx, cy);
+            }
+        });
+        this.canvas.addEventListener('mouseup', () => { this.isErasing = false; });
+        this.canvas.addEventListener('mouseleave', () => { this.isErasing = false; });
+    }
+
+    private eraseCell(cx: number, cy: number): void {
+        if (cx < 0 || cy < 0 || cx >= this.W || cy >= this.H) return;
+        const cell = this.board[cx][cy];
+        if (cell.type !== NodeType.EMPTY) {
+            const idx = this.palette.findIndex(p => p.color.toString() === cell.color?.toString());
+            if (idx >= 0) {
+                this.palette[idx].remaining = Math.min(this.palette[idx].target, this.palette[idx].remaining + 1);
+            }
+            this.board[cx][cy] = { type: NodeType.EMPTY, color: null };
+            this.renderPalette();
+            this.draw();
+            this.syncToGameState();
+        }
     }
 
     handleCanvasClick(e: MouseEvent): void {
+        if (e.button !== 0) return;
         const rect = this.canvas.getBoundingClientRect();
         const cx = Math.floor((e.clientX - rect.left) / this.S);
         const cy = this.H - 1 - Math.floor((e.clientY - rect.top) / this.S);
         if (cx < 0 || cy < 0 || cx >= this.W || cy >= this.H) return;
 
         const cell = this.board[cx][cy];
-        if (e.button === 2) { // Right click: erase
-            if (cell.type !== NodeType.EMPTY) {
-                // Refund remaining to matching palette color
-                const idx = this.palette.findIndex(p => p.color.toString() === cell.color?.toString());
-                if (idx >= 0) this.palette[idx].remaining = Math.min(this.palette[idx].target, this.palette[idx].remaining + 1);
-            }
-            this.board[cx][cy] = {type: NodeType.EMPTY, color: null};
-        } else { // Left click: paint with active color
-            const p = this.palette[this.activeColorIndex];
-            if (!p || p.remaining <= 0) return;
+        const p = this.palette[this.activeColorIndex];
+        if (!p || p.remaining <= 0) return;
 
-            // If replacing an existing known color, refund its palette first
-            if (cell.type !== NodeType.EMPTY && cell.type !== NodeType.UNKNOWN) {
-                const idx = this.palette.findIndex(pp => pp.color.toString() === cell.color?.toString());
-                if (idx >= 0) this.palette[idx].remaining = Math.min(this.palette[idx].target, this.palette[idx].remaining + 1);
-            }
-
-            this.board[cx][cy] = {type: NodeType.KNOWN, color: new Color(p.color.toString())};
-            p.remaining -= 1;
+        // If replacing an existing known color, refund its palette first
+        if (cell.type !== NodeType.EMPTY && cell.type !== NodeType.UNKNOWN) {
+            const idx = this.palette.findIndex(pp => pp.color.toString() === cell.color?.toString());
+            if (idx >= 0) this.palette[idx].remaining = Math.min(this.palette[idx].target, this.palette[idx].remaining + 1);
         }
+
+        this.board[cx][cy] = { type: NodeType.KNOWN, color: new Color(p.color.toString()) };
+        p.remaining -= 1;
         this.renderPalette();
         this.draw();
         this.syncToGameState();
