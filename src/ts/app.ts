@@ -4,7 +4,18 @@ import { Game, GameNode } from './game.ts';
 import { solve, SearchState } from './solver.ts';
 import { CanvasEditor } from './canvas-editor.ts';
 import { GameVisualizer, SolutionVisualizer } from './visualization.ts';
-import { GameState, NodeType, GameMode, Color } from './types.ts';
+import { GameState, GameStateNode, NodeType, GameMode, Color } from './types.ts';
+
+function gameToGameState(game: Game): GameState {
+    const groups: GameStateNode[][] = game.groups.map(group =>
+        group.map(node => ({
+            nodeType: node.type,
+            color: node.color ? new Color(node.color.toString()) : null,
+            originalPos: [node.pos[0], node.pos[1]] as [number, number]
+        }))
+    );
+    return { groups, undoCount: game.undoCount };
+}
 
 class WaterSortApp {
     canvasEditor: CanvasEditor;
@@ -207,13 +218,16 @@ class WaterSortApp {
             const startState = new SearchState(game, []);
             const result = solve(startState, searchDepth, debugMode);
             
+            const states = result.allStates.map(gameToGameState);
+
             const formattedResult = {
                 success: result.success,
                 steps: result.steps,
                 searchedStates: result.searchedStates,
-                finalState: result.allStates[result.allStates.length - 1]
+                isPartialSolution: result.isPartialSolution,
+                states
             };
-            
+
             this.solutionVisualizer.displaySolution(formattedResult, this.canvasEditor.getGameState()!);
             
         } catch (error: unknown) {
