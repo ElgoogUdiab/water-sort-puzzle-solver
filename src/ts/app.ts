@@ -36,10 +36,6 @@ class WaterSortApp {
             this.canvasEditor.reset();
         });
 
-        document.getElementById('rand')!.addEventListener('click', () => {
-            this.canvasEditor.randomize();
-        });
-
         document.getElementById('copyJson')!.addEventListener('click', () => {
             const mode = Number((document.getElementById('mode') as HTMLInputElement).value) as GameMode;
             const json = this.canvasEditor.exportToJSON(mode);

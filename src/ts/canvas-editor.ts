@@ -211,40 +211,6 @@ export class CanvasEditor {
         this.syncToGameState();
     }
 
-    randomize(): void {
-        // Typical setup: fill N-2 tubes with H of each color
-        const n = Math.max(1, Math.min(this.W - 2, this.palette.length || Math.max(2, this.W - 2)));
-        if (!this.palette.length) this.rebuildPalette();
-        
-        this.board = this.createBoard(this.W, this.H);
-        for (let t = 0; t < n; t++) {
-            for (let r = 0; r < this.H; r++) {
-                this.board[t][r] = {type: NodeType.KNOWN, color: new Color(this.palette[t % this.palette.length].color.toString())};
-            }
-        }
-        
-        // Shuffle
-        for (let k = 0; k < 200; k++) {
-            const a = Math.floor(Math.random() * this.W), b = Math.floor(Math.random() * this.W);
-            if (a === b) continue;
-            const srcTop = this.board[a].slice().reverse().findIndex(c => c.type !== NodeType.EMPTY);
-            if (srcTop < 0) continue;
-            const ai = this.board[a].length - 1 - srcTop;
-            const bi = this.board[b].slice().reverse().findIndex(c => c.type !== NodeType.EMPTY);
-            const insert = bi < 0 ? 0 : this.board[b].length - 1 - bi + 1;
-            const cell = this.board[a][ai];
-            for (let r = this.board[a].length - 1; r > ai; r--) this.board[a][r] = this.board[a][r - 1];
-            this.board[a][ai] = {type: NodeType.EMPTY, color: null};
-            for (let r = this.board[b].length - 1; r > insert; r--) this.board[b][r] = this.board[b][r - 1];
-            this.board[b][insert] = cell;
-        }
-        
-        this.recalcPaletteRemaining();
-        this.renderPalette();
-        this.draw();
-        this.syncToGameState();
-    }
-
     syncToGameState(): void {
         // Update currentGameState from canvas
         const groups: GameStateNode[][] = [];
