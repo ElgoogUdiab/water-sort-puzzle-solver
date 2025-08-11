@@ -15,6 +15,8 @@ export class CanvasEditor {
     currentGameState: GameState | null;
     isErasing: boolean;
     eraseMode: boolean;
+    touchStart: { x: number; y: number; id: number } | null;
+    touchMoved: boolean;
 
     constructor(canvasId: string, paletteId: string, options: {width?: number, height?: number} = {}) {
         this.canvas = document.getElementById(canvasId) as HTMLCanvasElement;
@@ -31,6 +33,8 @@ export class CanvasEditor {
         this.currentGameState = null;
         this.isErasing = false;
         this.eraseMode = false;
+        this.touchStart = null;
+        this.touchMoved = false;
         
         this.setupEventListeners();
         this.rebuildPalette();
@@ -143,13 +147,19 @@ export class CanvasEditor {
 
     setupEventListeners(): void {
         this.canvas.addEventListener('contextmenu', (e: Event) => e.preventDefault());
-        this.canvas.style.touchAction = 'none';
+        // Enable horizontal scrolling on touch devices
+        this.canvas.style.touchAction = 'pan-x';
 
         document.getElementById('eraseMode')?.addEventListener('change', (e: Event) => {
             this.eraseMode = (e.target as HTMLInputElement).checked;
         });
 
         this.canvas.addEventListener('pointerdown', (e: PointerEvent) => {
+            if (e.pointerType === 'touch') {
+                this.touchStart = { x: e.clientX, y: e.clientY, id: e.pointerId };
+                this.touchMoved = false;
+                return;
+            }
             if (e.button === 2 || (e.button === 0 && this.eraseMode)) {
                 const rect = this.canvas.getBoundingClientRect();
                 const cx = Math.floor((e.clientX - rect.left) / this.S);
@@ -161,6 +171,14 @@ export class CanvasEditor {
             }
         });
         this.canvas.addEventListener('pointermove', (e: PointerEvent) => {
+            if (e.pointerType === 'touch' && this.touchStart && e.pointerId === this.touchStart.id) {
+                const dx = e.clientX - this.touchStart.x;
+                const dy = e.clientY - this.touchStart.y;
+                if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+                    this.touchMoved = true;
+                }
+                return;
+            }
             if (this.isErasing) {
                 const rect = this.canvas.getBoundingClientRect();
                 const cx = Math.floor((e.clientX - rect.left) / this.S);
@@ -168,9 +186,35 @@ export class CanvasEditor {
                 this.eraseCell(cx, cy);
             }
         });
-        this.canvas.addEventListener('pointerup', () => { this.isErasing = false; });
-        this.canvas.addEventListener('pointerleave', () => { this.isErasing = false; });
-        this.canvas.addEventListener('pointercancel', () => { this.isErasing = false; });
+        this.canvas.addEventListener('pointerup', (e: PointerEvent) => {
+            if (e.pointerType === 'touch') {
+                if (this.touchStart && !this.touchMoved) {
+                    if (this.eraseMode) {
+                        const rect = this.canvas.getBoundingClientRect();
+                        const cx = Math.floor((e.clientX - rect.left) / this.S);
+                        const cy = this.H - 1 - Math.floor((e.clientY - rect.top) / this.S);
+                        this.eraseCell(cx, cy);
+                    } else {
+                        this.handleCanvasPointer(e);
+                    }
+                }
+                this.touchStart = null;
+                this.touchMoved = false;
+                this.isErasing = false;
+                return;
+            }
+            this.isErasing = false;
+        });
+        this.canvas.addEventListener('pointerleave', () => {
+            this.isErasing = false;
+            this.touchStart = null;
+            this.touchMoved = false;
+        });
+        this.canvas.addEventListener('pointercancel', () => {
+            this.isErasing = false;
+            this.touchStart = null;
+            this.touchMoved = false;
+        });
     }
 
     private eraseCell(cx: number, cy: number): void {
