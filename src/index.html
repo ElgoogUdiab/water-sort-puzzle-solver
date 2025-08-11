@@ -14,8 +14,8 @@
         <div class="panel game-editor">
             <h3>🎨 Board Editor</h3>
             <div class="row">
-                <label>Columns <input id="cols" type="number" value="6" min="2" max="24"></label>
-                <label>Height <input id="rows" type="number" value="4" min="2" max="12"></label>
+                <label>Columns <input id="cols" type="number" inputmode="numeric" pattern="[0-9]*" value="6" min="3" max="30"></label>
+                <label>Height <input id="rows" type="number" inputmode="numeric" pattern="[0-9]*" value="4" min="2" max="20"></label>
                 <label>Mode
                     <select id="mode">
                         <option value="0">Normal (combo allowed)</option>
@@ -23,7 +23,7 @@
                         <option value="2">Queue output (FIFO)</option>
                     </select>
                 </label>
-                <label>Undo Count <input id="undo" type="number" value="5" min="0" max="20"></label>
+                <label>Undo Count <input id="undo" type="number" inputmode="numeric" pattern="[0-9]*" value="5" min="0" max="20"></label>
                 <button id="reset" class="secondary">Reset</button>
                 <button id="copyJson" class="secondary">Copy JSON</button>
                 <button id="pasteJson" class="secondary">Paste JSON</button>
@@ -37,7 +37,7 @@
                 <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 8px;">
                     <div class="legend" id="palette"></div>
                     <div>
-                        <label>Colors <input id="numcolors" type="number" value="3" min="1" max="20"></label>
+                        <label>Colors <input id="numcolors" type="number" inputmode="numeric" pattern="[0-9]*" value="3" min="2" max="30"></label>
                         <label style="margin-left:8px;"><input type="checkbox" id="eraseMode"> Erase Mode</label>
                     </div>
                 </div>
@@ -52,7 +52,7 @@
                     <input type="checkbox" id="debugMode"> Debug Mode
                 </label>
                 <label>
-                    Search Depth: <input type="number" id="searchDepth" value="8" min="1" max="15" style="width: 60px">
+                    Search Depth: <input type="number" id="searchDepth" inputmode="numeric" pattern="[0-9]*" value="5" min="0" max="10" style="width: 60px">
                 </label>
             </div>
         </div>

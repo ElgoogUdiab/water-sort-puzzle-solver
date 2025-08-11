@@ -15,21 +15,35 @@ class WaterSortApp {
         this.canvasEditor = new CanvasEditor('grid', 'palette');
         this.gameVisualizer = new GameVisualizer('gameVisualization');
         this.solutionVisualizer = new SolutionVisualizer('solutionResult');
-        
+
         this.setupEventListeners();
         this.initialize();
     }
 
+    private sanitizeNumberInput(input: HTMLInputElement): number {
+        input.value = input.value.replace(/[^0-9]/g, '');
+        const min = input.min !== '' ? parseInt(input.min, 10) : undefined;
+        const max = input.max !== '' ? parseInt(input.max, 10) : undefined;
+        let value = parseInt(input.value, 10);
+        if (isNaN(value)) value = min ?? 0;
+        if (min !== undefined && value < min) value = min;
+        if (max !== undefined && value > max) value = max;
+        input.value = value.toString();
+        return value;
+    }
+
     setupEventListeners(): void {
         // Canvas editor controls
-        (document.getElementById('cols') as HTMLInputElement).addEventListener('input', (e: Event) => {
-            const target = e.target as HTMLInputElement;
-            this.canvasEditor.resize(parseInt(target.value), undefined);
+        const colsInput = document.getElementById('cols') as HTMLInputElement;
+        colsInput.addEventListener('input', () => {
+            const value = this.sanitizeNumberInput(colsInput);
+            this.canvasEditor.resize(value, undefined);
         });
 
-        (document.getElementById('rows') as HTMLInputElement).addEventListener('input', (e: Event) => {
-            const target = e.target as HTMLInputElement;
-            this.canvasEditor.resize(undefined, parseInt(target.value));
+        const rowsInput = document.getElementById('rows') as HTMLInputElement;
+        rowsInput.addEventListener('input', () => {
+            const value = this.sanitizeNumberInput(rowsInput);
+            this.canvasEditor.resize(undefined, value);
         });
 
         document.getElementById('reset')!.addEventListener('click', () => {
@@ -54,9 +68,10 @@ class WaterSortApp {
             }
         });
 
-        (document.getElementById('numcolors') as HTMLInputElement).addEventListener('input', (e: Event) => {
-            const target = e.target as HTMLInputElement;
-            this.canvasEditor.rebuildPalette(parseInt(target.value));
+        const numColorsInput = document.getElementById('numcolors') as HTMLInputElement;
+        numColorsInput.addEventListener('input', () => {
+            const value = this.sanitizeNumberInput(numColorsInput);
+            this.canvasEditor.rebuildPalette(value);
         });
 
         document.getElementById('solveBtn')!.addEventListener('click', () => {
@@ -200,8 +215,8 @@ class WaterSortApp {
 
     solveGame(): void {
         const debugMode = (document.getElementById('debugMode') as HTMLInputElement).checked;
-        const searchDepth = parseInt((document.getElementById('searchDepth') as HTMLInputElement).value);
-        const undoCount = parseInt((document.getElementById('undo') as HTMLInputElement).value);
+        const searchDepth = this.sanitizeNumberInput(document.getElementById('searchDepth') as HTMLInputElement);
+        const undoCount = this.sanitizeNumberInput(document.getElementById('undo') as HTMLInputElement);
         const mode = Number((document.getElementById('mode') as HTMLInputElement).value) as GameMode;
         
         try {
