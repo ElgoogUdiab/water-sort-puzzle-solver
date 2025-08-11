@@ -53,8 +53,8 @@ export class GameVisualizer {
                     ball.textContent = '?';
                     ball.title = 'Unknown Revealed';
                 } else if (node.color) {
-                    ball.style.backgroundColor = node.color;
-                    ball.title = node.color;
+                    ball.style.backgroundColor = node.color.toString();
+                    ball.title = node.color.toString();
                 }
                 
                 tube.appendChild(ball);
@@ -211,7 +211,7 @@ export class SolutionVisualizer {
                 for (let i = topBallIndex; i >= 0; i--) {
                     const node = srcGroup[i];
                     if (node.nodeType !== NodeType.EMPTY &&
-                        JSON.stringify(node.color) === JSON.stringify(ball.color)) {
+                        node.color?.toString() === ball.color?.toString()) {
                         ballsToMove.unshift(node);
                     } else {
                         break;
