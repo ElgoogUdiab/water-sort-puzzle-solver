@@ -1,7 +1,6 @@
 import win32com.client
-from dataclasses import dataclass
-from game import Game, GameNode, GameNodeType, OperationStepForward, OperationUndo, visualize_game, GameOperation, GameMode
-from solver import SearchState, solve
+from game import Game, GameNode, GameNodeType, GameMode
+from solver_runner import solve_and_print
 
 BOUNDARY_COLOR = (0,0,0)
 EMPTY_COLOR = (255,255,255)
@@ -90,20 +89,4 @@ def read_current_excel_sheet() -> Game:
 
 if __name__ == "__main__":
     game = read_current_excel_sheet()
-    visualize_game(game).save("debug/input.png")
-    solved_state = solve(SearchState(game, []))
-
-    if solved_state.state_game.is_winning_state:
-        print(*solved_state.path, sep="\n")
-    else:
-        print("Follow the steps, update the blocks, and run again:")
-        for i, step in enumerate(solved_state.path, start=1):
-            new_game = game.apply_op(step)
-            print(step)
-            if new_game.unknown_revealed_count > game.unknown_revealed_count:
-                revealed_set = set(node[0].original_pos for node in new_game.unknown_revealed_nodes) - set(node[0].original_pos for node in game.unknown_revealed_nodes)
-                assert len(revealed_set) == 1
-                revealed = revealed_set.pop()
-                print(f"Update node at column {revealed[0] + 1}, row {revealed[1] + 1}")
-            game = new_game
-        visualize_game(game).save("final_state.png")
+    solve_and_print(game)

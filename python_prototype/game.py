@@ -333,7 +333,23 @@ class Game:
     def __eq__(self, other: Self) -> bool:
         return self._to_hashable() == other._to_hashable()
 
-def visualize_game(game: Game, scale:int = 20) -> Image:
+    def to_json(self) -> dict:
+        def node_to_dict(node: GameNode) -> dict:
+            data = {
+                "nodeType": node.node_type.value,
+                "originalPos": list(node.original_pos),
+            }
+            if node.node_type == GameNodeType.KNOWN and node.color is not None:
+                data["color"] = list(node.color)
+            return data
+
+        return {
+            "groups": [[node_to_dict(n) for n in g] for g in self.groups],
+            "undoCount": self.undo_count,
+        }
+
+
+def visualize_game(game: Game, scale: int = 20) -> Image:
     game_size = (game.group_capacity, len(game.groups))
     image_np = np.ones((*game_size, 3), dtype="u1") * 255
     for col, group in enumerate(game.groups):
