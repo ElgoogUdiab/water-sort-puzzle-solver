@@ -1,18 +1,4 @@
-// Game classes and logic - TypeScript port of game.py
-export enum NodeType {
-    UNKNOWN = '?',
-    UNKNOWN_REVEALED = '!',
-    KNOWN = '.',
-    EMPTY = '_'
-}
-
-export enum GameMode {
-    NORMAL = 0,
-    NO_COMBO = 1,
-    QUEUE = 2
-}
-
-export type Color = [number, number, number];
+import { Color, GameMode, NodeType } from "./types";
 
 // 简单断言工具：失败时抛异常，同时能帮 TS 收窄类型
 function invariant(cond: unknown, msg: string): asserts cond {
