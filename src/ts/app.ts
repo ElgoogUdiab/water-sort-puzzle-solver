@@ -217,7 +217,7 @@ class WaterSortApp {
                 success: result.success,
                 steps: result.steps,
                 searchedStates: result.searchedStates,
-                finalState: result.finalState
+                finalState: result.allStates[result.allStates.length - 1]
             };
             
             this.solutionVisualizer.displaySolution(formattedResult, this.canvasEditor.getGameState()!);
