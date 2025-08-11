@@ -26,7 +26,8 @@ html, body {
 }
 
 .board-canvas {
-    touch-action: none;
+    /* Allow horizontal scrolling while preventing vertical panning */
+    touch-action: pan-x;
 }
 
 .panel { 

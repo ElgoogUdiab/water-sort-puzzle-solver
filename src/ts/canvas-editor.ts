@@ -143,7 +143,8 @@ export class CanvasEditor {
 
     setupEventListeners(): void {
         this.canvas.addEventListener('contextmenu', (e: Event) => e.preventDefault());
-        this.canvas.style.touchAction = 'none';
+        // Enable horizontal scrolling on touch devices
+        this.canvas.style.touchAction = 'pan-x';
 
         document.getElementById('eraseMode')?.addEventListener('change', (e: Event) => {
             this.eraseMode = (e.target as HTMLInputElement).checked;
