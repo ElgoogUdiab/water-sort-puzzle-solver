@@ -6,10 +6,14 @@ function invariant(cond: unknown, msg: string): asserts cond {
 }
 
 export class GameNode {
+    public readonly type: NodeType;
+    public readonly pos: readonly [number, number];
+    public readonly color: Color | null;
+
     constructor(
-        public type: NodeType, 
-        public pos: [number, number], 
-        public color: Color | null = null
+        type: NodeType,
+        pos: readonly [number, number],
+        color: Color | null = null
     ) {
         // === 把 Python 的 __post_init__ 断言搬过来 ===
         if (
@@ -22,6 +26,10 @@ export class GameNode {
                 `color must be null when type=${type}`
             );
         }
+        this.type = type;
+        this.pos = Object.freeze([...pos]) as readonly [number, number];
+        this.color = color;
+        Object.freeze(this);
     }
 }
 
@@ -44,7 +52,7 @@ export class UndoOp {
 
 export class Game {
     public capacity: number;
-    public groups: GameNode[][];
+    public readonly groups: ReadonlyArray<readonly GameNode[]>;
     public undoCount: number;
     public mode: GameMode;
     public undoTargetState: Game | null;
@@ -59,7 +67,9 @@ export class Game {
             capacity = [...set][0];
         }
         this.capacity = capacity;
-        this.groups = groups.map(g => Game.normalizeGroup(g));
+        this.groups = Object.freeze(
+            groups.map(g => Object.freeze(Game.normalizeGroup(g)))
+        );
         this.undoCount = undoCount;
         this.mode = mode;
         this.undoTargetState = null;
@@ -104,13 +114,13 @@ export class Game {
         }
 }
     
-    static normalizeGroup(g: GameNode[]): GameNode[] {
+    static normalizeGroup(g: readonly GameNode[]): GameNode[] {
         const t = [...g];
         while (t.length && t[t.length - 1].type === NodeType.EMPTY) t.pop();
         return t;
     }
     
-    isGroupCompleted(g: GameNode[]): boolean {
+    isGroupCompleted(g: readonly GameNode[]): boolean {
         if (g.length !== this.capacity) return false;
         if (g.some(n => n.type !== NodeType.KNOWN || !n.color)) return false;
         const f = g[0].color!.toString();
@@ -184,66 +194,67 @@ export class Game {
     apply(op: StepOp | UndoOp): Game {
         if (op instanceof UndoOp) {
             if (!this.undoTargetState) return this;
-            const ng = this.undoTargetState.clone();
-            ng.undoCount = this.undoCount - 1;
-            ng.undoTargetState = this.undoTargetState?.undoTargetState ?? null;
-            for (const g of ng.groups) {
-                for (let i = 0; i < g.length; i++) {
-                    const n = g[i];
+            const base = this.undoTargetState;
+            const newGroups = base.groups.map(g =>
+                g.map(n => {
                     const key = `${n.pos[0]},${n.pos[1]}`;
                     if (this.allRevealed.has(key)) {
-                        g[i] = new GameNode(NodeType.UNKNOWN_REVEALED, [...n.pos]);
+                        return new GameNode(NodeType.UNKNOWN_REVEALED, n.pos);
                     }
-                }
-            }
+                    return n;
+                })
+            ) as GameNode[][];
+            const ng = new Game(newGroups, this.undoCount - 1, base.capacity, base.mode);
+            ng.undoTargetState = base.undoTargetState ?? null;
+            ng.allRevealed = new Set(this.allRevealed);
             return ng;
         }
-        
+
         if (!(op instanceof StepOp)) return this;
-        const ns = this.clone();
-        const src = ns.groups[op.src], dst = ns.groups[op.dst];
-        const cap = ns.capacity;
-        const pickFromTop = (ns.mode !== GameMode.QUEUE);
+        const groups = this.groups.map(g => [...g]);
+        const src = groups[op.src]!;
+        const dst = groups[op.dst]!;
+        const cap = this.capacity;
+        const pickFromTop = (this.mode !== GameMode.QUEUE);
         const pickIndex = pickFromTop ? src.length - 1 : 0;
         const item = src[pickIndex];
-        let revealFlag = null;
-        
+        let revealFlag: string | null = null;
+
         if (item.type === NodeType.UNKNOWN_REVEALED) {
             dst.push(src.splice(pickIndex, 1)[0]!);
         } else if (item.type === NodeType.KNOWN) {
-            if (ns.mode === GameMode.NO_COMBO) {
+            if (this.mode === GameMode.NO_COMBO) {
                 if (dst.length < cap) dst.push(src.splice(pickIndex, 1)[0]!);
-            } else if (ns.mode === GameMode.NORMAL) {
+            } else if (this.mode === GameMode.NORMAL) {
                 const key = item.color?.toString();
-                while (src.length &&
-                       src[src.length - 1].type === NodeType.KNOWN &&
-                       src[src.length - 1].color?.toString() === key &&
-                       dst.length < cap) {
+                while (
+                    src.length &&
+                    src[src.length - 1].type === NodeType.KNOWN &&
+                    src[src.length - 1].color?.toString() === key &&
+                    dst.length < cap
+                ) {
                     dst.push(src.pop()!);
                 }
-            } else if (ns.mode === GameMode.QUEUE) {
+            } else if (this.mode === GameMode.QUEUE) {
                 const key = item.color?.toString();
-                while (src.length &&
-                       src[0].type === NodeType.KNOWN &&
-                       src[0].color?.toString() === key &&
-                       dst.length < cap) {
+                while (
+                    src.length &&
+                    src[0].type === NodeType.KNOWN &&
+                    src[0].color?.toString() === key &&
+                    dst.length < cap
+                ) {
                     dst.push(src.shift()!);
                 }
             }
         }
-        
+
         if (src.length && src[src.length - 1].type === NodeType.UNKNOWN) {
             const top = src[src.length - 1];
             revealFlag = `${top.pos[0]},${top.pos[1]}`;
-            src[src.length - 1] = new GameNode(NodeType.UNKNOWN_REVEALED, [...top.pos]);
+            src[src.length - 1] = new GameNode(NodeType.UNKNOWN_REVEALED, top.pos);
         }
-        
-        const next = new Game(
-            ns.groups.map(g => g.map(n => n)), 
-            ns.undoCount, 
-            ns.capacity, 
-            ns.mode
-        );
+
+        const next = new Game(groups, this.undoCount, this.capacity, this.mode);
         next.undoTargetState = this;
         next.allRevealed = new Set(this.allRevealed);
         if (revealFlag) {
@@ -255,8 +266,8 @@ export class Game {
     
     clone(): Game {
         const gs = this.groups.map(g =>
-            g.map(n => new GameNode(n.type, [...n.pos], n.color ? new Color(n.color.toString()) : null))
-        );
+            g.map(n => new GameNode(n.type, n.pos, n.color ? new Color(n.color.toString()) : null))
+        ) as GameNode[][];
         const c = new Game(gs, this.undoCount, this.capacity, this.mode);
         c.undoTargetState = this.undoTargetState;
         c.allRevealed = new Set(this.allRevealed);

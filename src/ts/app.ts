@@ -7,13 +7,13 @@ import { GameVisualizer, SolutionVisualizer } from './visualization.ts';
 import { GameState, GameStateNode, NodeType, GameMode, Color } from './types.ts';
 
 function gameToGameState(game: Game): GameState {
-    const groups: GameStateNode[][] = game.groups.map(group =>
+    const groups = game.groups.map(group =>
         group.map(node => ({
             nodeType: node.type,
             color: node.color ? new Color(node.color.toString()) : null,
             originalPos: [node.pos[0], node.pos[1]] as [number, number]
         }))
-    );
+    ) as GameStateNode[][];
     return { groups, undoCount: game.undoCount };
 }
 
@@ -202,7 +202,7 @@ class WaterSortApp {
                     else if (node.nodeType === NodeType.EMPTY) nodeType = NodeType.EMPTY;
 
                     const color = node.color ? new Color(node.color.toString()) : null;
-                    return new GameNode(nodeType, [groupIndex, nodeIndex], color);
+                    return new GameNode(nodeType, [groupIndex, nodeIndex] as [number, number], color);
                 })
             );
             
