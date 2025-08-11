@@ -95,6 +95,7 @@ The application uses a carefully selected 12-color palette extracted from Excel:
 - **Canvas Rendering**: Smooth 60fps painting experience
 - **1:1 Python Port**: Identical algorithm to the original Python solver
 - **Event-Driven**: Reactive UI updates
+- **Branded Color Type**: Hex colors wrapped in a `Color` class for type safety
 
 ## 📝 Algorithm
 

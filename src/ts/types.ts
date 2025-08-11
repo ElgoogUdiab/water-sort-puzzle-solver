@@ -12,11 +12,14 @@ export enum GameMode {
     QUEUE = 2
 }
 
-export type Color = [number, number, number];
+// Branded wrapper around a hex color string for stronger typing
+export class Color extends String {
+    constructor(hex: string) { super(hex); }
+}
 
 export interface GameStateNode {
     nodeType: NodeType;
-    color: string | null;
+    color: Color | null;
     originalPos: [number, number];
 }
 
@@ -27,11 +30,11 @@ export interface GameState {
 
 export interface BoardCell {
     type: NodeType;
-    color: number[] | null;
+    color: Color | null;
 }
 
 export interface PaletteColor {
-    rgb: number[];
+    color: Color;
     target: number;
     remaining: number;
 }

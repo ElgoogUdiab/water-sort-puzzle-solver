@@ -93,8 +93,8 @@ export class Game {
         const colorCount = new Map<string, number>();
         for (const g of this.groups) {
             for (const n of g) {
-                if (n.type === NodeType.KNOWN) {
-                    const key = JSON.stringify(n.color);
+                if (n.type === NodeType.KNOWN && n.color) {
+                    const key = n.color.toString();
                     colorCount.set(key, (colorCount.get(key) ?? 0) + 1);
                     if ((colorCount.get(key) ?? 0) > this.capacity) {
                         throw new Error(`Color ${key} appears more than capacity (${this.capacity}).`);
@@ -112,9 +112,9 @@ export class Game {
     
     isGroupCompleted(g: GameNode[]): boolean {
         if (g.length !== this.capacity) return false;
-        if (g.some(n => n.type !== NodeType.KNOWN)) return false;
-        const f = JSON.stringify(g[0].color);
-        return g.every(n => JSON.stringify(n.color) === f);
+        if (g.some(n => n.type !== NodeType.KNOWN || !n.color)) return false;
+        const f = g[0].color!.toString();
+        return g.every(n => n.color?.toString() === f);
     }
     
     ops(): (StepOp | UndoOp)[] {
@@ -145,15 +145,15 @@ export class Game {
                 if (d === s) continue;
                 const dst = this.groups[d];
                 
-                if (opItem.type === NodeType.KNOWN && 
-                    new Set(src.map(n => JSON.stringify(n.color))).size === 1 && 
+                if (opItem.type === NodeType.KNOWN &&
+                    new Set(src.map(n => n.color ? n.color.toString() : null)).size === 1 &&
                     dst.length === 0) continue;
                     
-                if (opItem.type === NodeType.KNOWN && 
-                    dst.length > 0 && 
-                    dst[dst.length - 1].type === NodeType.KNOWN && 
-                    JSON.stringify(dst[dst.length - 1].color) === JSON.stringify(opItem.color) && 
-                    new Set(dst.map(n => JSON.stringify(n.color))).size === 1) {
+                if (opItem.type === NodeType.KNOWN &&
+                    dst.length > 0 &&
+                    dst[dst.length - 1].type === NodeType.KNOWN &&
+                    dst[dst.length - 1].color?.toString() === opItem.color?.toString() &&
+                    new Set(dst.map(n => n.color ? n.color.toString() : null)).size === 1) {
                     tmp.splice(0, tmp.length, new StepOp(s, d));
                     break;
                 }
@@ -165,9 +165,9 @@ export class Game {
                 }
                 
                 // Color match - only for KNOWN blocks (UNKNOWN_REVEALED blocks have no color to match)
-                if (opItem.type === NodeType.KNOWN && 
-                    dst[dst.length - 1].type === NodeType.KNOWN && 
-                    JSON.stringify(dst[dst.length - 1].color) === JSON.stringify(opItem.color)) {
+                if (opItem.type === NodeType.KNOWN &&
+                    dst[dst.length - 1].type === NodeType.KNOWN &&
+                    dst[dst.length - 1].color?.toString() === opItem.color?.toString()) {
                     tmp.push(new StepOp(s, d));
                     continue;
                 }
@@ -214,18 +214,18 @@ export class Game {
             if (ns.mode === GameMode.NO_COMBO) {
                 if (dst.length < cap) dst.push(src.splice(pickIndex, 1)[0]!);
             } else if (ns.mode === GameMode.NORMAL) {
-                const key = JSON.stringify(item.color);
-                while (src.length && 
-                       src[src.length - 1].type === NodeType.KNOWN && 
-                       JSON.stringify(src[src.length - 1].color) === key && 
+                const key = item.color?.toString();
+                while (src.length &&
+                       src[src.length - 1].type === NodeType.KNOWN &&
+                       src[src.length - 1].color?.toString() === key &&
                        dst.length < cap) {
                     dst.push(src.pop()!);
                 }
             } else if (ns.mode === GameMode.QUEUE) {
-                const key = JSON.stringify(item.color);
-                while (src.length && 
-                       src[0].type === NodeType.KNOWN && 
-                       JSON.stringify(src[0].color) === key && 
+                const key = item.color?.toString();
+                while (src.length &&
+                       src[0].type === NodeType.KNOWN &&
+                       src[0].color?.toString() === key &&
                        dst.length < cap) {
                     dst.push(src.shift()!);
                 }
@@ -254,8 +254,8 @@ export class Game {
     }
     
     clone(): Game {
-        const gs = this.groups.map(g => 
-            g.map(n => new GameNode(n.type, [...n.pos], n.color ? [...n.color] : null))
+        const gs = this.groups.map(g =>
+            g.map(n => new GameNode(n.type, [...n.pos], n.color ? new Color(n.color.toString()) : null))
         );
         const c = new Game(gs, this.undoCount, this.capacity, this.mode);
         c.undoTargetState = this.undoTargetState;
@@ -287,7 +287,7 @@ export class Game {
                         seg++;
                     } else if (n.type === NodeType.UNKNOWN || n.type === NodeType.UNKNOWN_REVEALED) {
                         seg++;
-                    } else if (last !== null && JSON.stringify(n.color) !== JSON.stringify(last.color)) {
+                    } else if (last !== null && n.color?.toString() !== last.color?.toString()) {
                         seg++;
                     }
                 }
