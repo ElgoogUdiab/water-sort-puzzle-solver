@@ -47,7 +47,7 @@ export class Game {
     public groups: GameNode[][];
     public undoCount: number;
     public mode: GameMode;
-    public prev: Game | null;
+    public undoTargetState: Game | null;
     public allRevealed: Set<string>;
     public revealedNew: boolean;
     public containsUnknown: boolean;
@@ -62,7 +62,7 @@ export class Game {
         this.groups = groups.map(g => Game.normalizeGroup(g));
         this.undoCount = undoCount;
         this.mode = mode;
-        this.prev = null;
+        this.undoTargetState = null;
         this.allRevealed = new Set();
         this.revealedNew = false;
         this.containsUnknown = this.groups.some(g => 
@@ -175,7 +175,7 @@ export class Game {
             res.push(...tmp);
         }
         
-        if (this.containsUnknown && this.prev && this.undoCount > 0) {
+        if (this.containsUnknown && this.undoTargetState && this.undoCount > 0) {
             res.push(new UndoOp());
         }
         return res;
@@ -183,10 +183,10 @@ export class Game {
     
     apply(op: StepOp | UndoOp): Game {
         if (op instanceof UndoOp) {
-            if (!this.prev) return this;
-            const ng = this.prev.clone();
+            if (!this.undoTargetState) return this;
+            const ng = this.undoTargetState.clone();
             ng.undoCount = this.undoCount - 1;
-            ng.prev = this.prev?.prev ?? null;
+            ng.undoTargetState = this.undoTargetState?.undoTargetState ?? null;
             for (const g of ng.groups) {
                 for (let i = 0; i < g.length; i++) {
                     const n = g[i];
@@ -244,7 +244,7 @@ export class Game {
             ns.capacity, 
             ns.mode
         );
-        next.prev = this;
+        next.undoTargetState = this;
         next.allRevealed = new Set(this.allRevealed);
         if (revealFlag) {
             next.allRevealed.add(revealFlag);
@@ -258,7 +258,7 @@ export class Game {
             g.map(n => new GameNode(n.type, [...n.pos], n.color ? [...n.color] : null))
         );
         const c = new Game(gs, this.undoCount, this.capacity, this.mode);
-        c.prev = this.prev;
+        c.undoTargetState = this.undoTargetState;
         c.allRevealed = new Set(this.allRevealed);
         c.revealedNew = this.revealedNew;
         return c;
