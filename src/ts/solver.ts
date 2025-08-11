@@ -87,11 +87,9 @@ export function solve(startState: SearchState, depth = 8, debug = false, originS
     function canonicalStateKey(stateGame: Game): string {
         // Build groups as arrays of {t, c} ignoring positions
         const groups = stateGame.groups.map(g => g.map(n => ({ t: n.type, c: n.color })));
-        // Sort each group's items by (t,c) string to make inner tuple canonical
         const groupStrings = groups.map(grp => {
             const items = grp.map(x => JSON.stringify(x));
-            // Do NOT sort inside a group: Python uses tuple(group) which preserves order inside each group.
-            // So we keep inner order to match Python; only sort groups themselves.
+            // 保持组内顺序，只对组列表排序以忽略顺序差异
             return JSON.stringify(items);
         });
         // Sort groups to ignore group order (frozenset of groups)
