@@ -1,6 +1,10 @@
 # Use official Node.js LTS image
 FROM node:20-alpine
 
+# Prevent Vite or other tools from trying to open a browser in the
+# container where no GUI is available
+ENV BROWSER=none
+
 # Create and set working directory
 WORKDIR /app
 
