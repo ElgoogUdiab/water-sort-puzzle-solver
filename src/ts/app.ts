@@ -205,7 +205,7 @@ class WaterSortApp {
 
     importFromJSON(json: string): void {
         try {
-            const data = JSON.parse(json) as GameState & {cols?: number; rows?: number; mode?: GameMode};
+            const data = JSON.parse(json) as GameState & {cols?: number; rows?: number; mode?: GameMode; colors?: number};
             if (typeof data.cols === 'number') {
                 (document.getElementById('cols') as HTMLInputElement).value = data.cols.toString();
             }
@@ -215,6 +215,10 @@ class WaterSortApp {
             }
             if (typeof data.mode === 'number') {
                 (document.getElementById('mode') as HTMLInputElement).value = data.mode.toString();
+            }
+            if (typeof data.colors === 'number') {
+                (document.getElementById('numcolors') as HTMLInputElement).value = data.colors.toString();
+                this.canvasEditor.rebuildPalette(data.colors);
             }
             this.setCanvasFromGameState(data);
         } catch (err) {
