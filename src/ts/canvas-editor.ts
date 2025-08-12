@@ -341,6 +341,7 @@ export class CanvasEditor {
             cols: this.W,
             rows: this.H,
             mode,
+            colors: this.palette.length,
             groups: this.toSolverFormat().groups
         };
         return JSON.stringify(data);
