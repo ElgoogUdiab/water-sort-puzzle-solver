@@ -238,8 +238,7 @@ label {
     margin: 16px 0;
 }
 
-.steps li {
-    padding: 12px 16px;
+.step {
     margin: 4px 0;
     background-color: #0b1220;
     border: 1px solid #1f2937;
@@ -247,7 +246,17 @@ label {
     transition: all 0.2s;
 }
 
-.steps li:hover {
+.step summary {
+    padding: 12px 16px;
+    cursor: pointer;
+}
+
+.step-state {
+    padding: 12px 16px;
+    border-top: 1px solid #1f2937;
+}
+
+.step[open] {
     background-color: #1f2937;
     border-color: #3b82f6;
 }
