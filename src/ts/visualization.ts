@@ -114,15 +114,17 @@ export class SolutionVisualizer {
                         ${steps.map((step: string, index: number) => {
                             const reveal = this.revealSteps ? this.revealSteps[index] : null;
                             const extra = reveal ? ` - reveal column ${reveal.col}, row ${reveal.row}` : '';
-                            return `<li onclick='showStepState(${index + 1})' style='cursor: pointer; padding: 12px 16px; margin: 4px 0; border-radius: 8px;' onmouseover="this.style.backgroundColor='#1f2937'" onmouseout="this.style.backgroundColor='#0b1220'">${step}${extra}</li>`;
+                            return `<details class='step' ontoggle='showStepState(${index + 1}, this)'>\n                                <summary>${step}${extra}</summary>\n                                <div class='step-state'></div>\n                            </details>`;
                         }).join('')}
                     </ol>
-                    <div id='stepStateVisualization' style='margin-top: 20px;'></div>
                 </div>
             `;
 
             // Make showStepState globally available
-            window.showStepState = (stepIndex: number) => this.showStepState(stepIndex);
+            window.showStepState = (stepIndex: number, el: HTMLElement) => this.showStepState(stepIndex, el);
+            window.makeStartingState = (index: number) => {
+                this.makeStartingStateFromSolution(index);
+            };
         } else {
             this.container.innerHTML = `
                 <div class='error'>
@@ -170,41 +172,39 @@ export class SolutionVisualizer {
         };
     }
 
-    showStepState(stepIndex: number): void {
+    showStepState(stepIndex: number, el: HTMLElement): void {
         if (!this.solutionStates || stepIndex >= this.solutionStates.length) return;
 
+        const detailsEl = el as HTMLDetailsElement;
+        const container = detailsEl.querySelector('.step-state') as HTMLElement;
+
+        if (!detailsEl.open) {
+            container.innerHTML = '';
+            return;
+        }
+
         const stepState = this.solutionStates[stepIndex];
-        const container = document.getElementById('stepStateVisualization') as HTMLElement;
-        
+
         // Calculate remaining undo steps if this is a state with unknown blocks
         const hasUnknown = stepState.groups && stepState.groups.some(group =>
             group.some(node => node.nodeType === NodeType.UNKNOWN || node.nodeType === NodeType.UNKNOWN_REVEALED)
         );
         const undoInfo = hasUnknown ? `<p><strong>Remaining Undo Steps:</strong> ${stepState.undoCount || 'N/A'}</p>` : '';
-        
+
         const stepNumber = stepIndex === 0 ? 'Initial' : `After Step ${stepIndex}`;
+        const vizId = `stepGameVisualization-${stepIndex}`;
         container.innerHTML = `
             <h4>Game State: ${stepNumber}</h4>
             ${undoInfo}
-            <div id="stepGameVisualization"></div>
+            <div id="${vizId}"></div>
             <div style="margin-top: 10px;">
                 <button onclick="makeStartingState(${stepIndex})" style="background-color: #2563eb; margin-right: 10px;">Make This Starting State</button>
-                <button onclick="clearStepVisualization()">Hide State</button>
             </div>
         `;
-        
-        // Visualize the step state
-        const stepVisualizer = new GameVisualizer('stepGameVisualization');
-        stepVisualizer.visualizeGameState(stepState);
-        
-        // Make functions globally available
-        window.clearStepVisualization = () => {
-            container.innerHTML = '';
-        };
 
-        window.makeStartingState = (index: number) => {
-            this.makeStartingStateFromSolution(index);
-        };
+        // Visualize the step state
+        const stepVisualizer = new GameVisualizer(vizId);
+        stepVisualizer.visualizeGameState(stepState);
     }
     makeStartingStateFromSolution(stepIndex: number): void {
         if (!this.solutionStates || stepIndex >= this.solutionStates.length) return;
@@ -216,15 +216,12 @@ export class SolutionVisualizer {
             detail: targetState
         }));
 
-        // Clear the step visualization
-        window.clearStepVisualization();
     }
 }
 
 declare global {
     interface Window {
-        showStepState: (stepIndex: number) => void;
-        clearStepVisualization: () => void;
+        showStepState: (stepIndex: number, el: HTMLElement) => void;
         makeStartingState: (index: number) => void;
     }
 }
