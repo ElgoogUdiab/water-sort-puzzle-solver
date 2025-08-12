@@ -16,6 +16,7 @@ class WaterSortApp {
         this.gameVisualizer = new GameVisualizer('gameVisualization');
         this.solutionVisualizer = new SolutionVisualizer('solutionResult');
 
+        this.enforceNumericInput();
         this.setupEventListeners();
         this.initialize();
     }
@@ -30,6 +31,14 @@ class WaterSortApp {
         if (max !== undefined && value > max) value = max;
         input.value = value.toString();
         return value;
+    }
+
+    private enforceNumericInput(): void {
+        const numericInputs = document.querySelectorAll<HTMLInputElement>('input[type="number"]');
+        numericInputs.forEach(input => {
+            input.inputMode = 'numeric';
+            input.pattern = '[0-9]*';
+        });
     }
 
     setupEventListeners(): void {
