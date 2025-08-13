@@ -348,7 +348,23 @@ canvas {
     color: #e6edf3;
 }
 
-.swatch.active { 
-    outline: 2px solid #3b82f6; 
+.swatch.active {
+    outline: 2px solid #3b82f6;
     border-color: #3b82f6;
+}
+
+.github-footer {
+    text-align: center;
+    margin: 32px 0;
+}
+
+.github-footer .github-icon {
+    width: 40px;
+    height: 40px;
+    fill: #e6edf3;
+    transition: opacity 0.2s;
+}
+
+.github-footer a:hover .github-icon {
+    opacity: 0.8;
 }
