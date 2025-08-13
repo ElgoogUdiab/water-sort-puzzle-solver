@@ -358,13 +358,11 @@ canvas {
     margin: 32px 0;
 }
 
-.github-footer .github-icon {
-    width: 40px;
-    height: 40px;
-    fill: #e6edf3;
+.github-footer .github-badge {
+    height: 32px;
     transition: opacity 0.2s;
 }
 
-.github-footer a:hover .github-icon {
+.github-footer a:hover .github-badge {
     opacity: 0.8;
 }
