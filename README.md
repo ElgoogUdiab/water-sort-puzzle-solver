@@ -2,6 +2,8 @@
 
 An interactive web application for building and solving Water Sort puzzles.
 
+🚀 Try it live at [water-sort-puzzle-solver.elgoogudiab.com](https://water-sort-puzzle-solver.elgoogudiab.com/).
+
 ## ✨ Features
 
 - 🎨 Interactive canvas editor for designing puzzles
