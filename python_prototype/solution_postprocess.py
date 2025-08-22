@@ -12,9 +12,26 @@ def is_ops_all_step_forward(xs: list[GameOperation]) -> TypeGuard[list[Operation
 def solution_to_graph(input_solution: SearchState) -> nx.DiGraph:
     assert is_ops_all_step_forward(input_solution.path)
 
+    # Reconstruct intermediate game states in order from start to end
+    states = []
+    game_ptr = input_solution.state_game
+    while game_ptr is not None:
+        states.append(game_ptr)
+        game_ptr = game_ptr.previous_state
+    states.reverse()
+    assert len(states) == len(input_solution.path) + 1
+
     G = nx.DiGraph()
     for i, op in enumerate(input_solution.path):
-        G.add_node(i, label=f"{op}")
+        src_group = states[i].groups[op.src]
+        op_item = src_group[-1]
+        G.add_node(
+            i,
+            label=f"{op}",
+            op_src=op.src,
+            op_dst=op.dst,
+            op_color=op_item.color,
+        )
 
     G.add_node("s", label="s")
     G.add_node("t", label="t")
@@ -29,15 +46,15 @@ def solution_to_graph(input_solution: SearchState) -> nx.DiGraph:
         if es_1 == es_2 == -1:
             G.add_edge("s", i)
         last_op_on_group_index[op.src] = last_op_on_group_index[op.dst] = i
-    
+
     src_nodes = set()
     for src, _ in G.edges:
         src_nodes.add(src)
-    
+
     for i in range(len(input_solution.path)):
         if i not in src_nodes:
             G.add_edge(i, "t")
-    
+
     TR = nx.transitive_reduction(G)
     TR.add_nodes_from(G.nodes(data=True))
 
@@ -49,5 +66,22 @@ def solution_postprocess(input_solution: SearchState) -> nx.DiGraph:
 
 def show_graph(G: nx.DiGraph):
     pos = graphviz_layout(G, prog="dot", root=G.nodes["s"])
-    nx.draw(G, pos, with_labels=True, arrows=True, node_color="orange", labels=dict(G.nodes.data("label")))
+    node_colors = []
+    for n in G.nodes:
+        if n in {"s", "t"}:
+            node_colors.append("lightgray")
+        else:
+            color = G.nodes[n].get("op_color")
+            if isinstance(color, tuple):
+                node_colors.append([c / 255 for c in color])
+            else:
+                node_colors.append("lightgray")
+    nx.draw(
+        G,
+        pos,
+        with_labels=True,
+        arrows=True,
+        node_color=node_colors,
+        labels=dict(G.nodes.data("label")),
+    )
     plt.show()
