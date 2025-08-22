@@ -4,7 +4,8 @@ from typing import Union
 
 from game import Game, GameNode, GameNodeType
 from solver_runner import solve_and_print
-
+from solver import SearchState, solve
+from solution_postprocess import solution_postprocess, show_graph
 
 def rgb_to_hex(rgb: tuple[int, int, int]) -> str:
     return "#%02x%02x%02x" % rgb
@@ -60,5 +61,8 @@ if __name__ == "__main__":
         print("Usage: json_identifier.py <puzzle.json>")
         sys.exit(1)
     game = read_json_file(sys.argv[1])
-    solve_and_print(game)
+    solved_game = solve_and_print(game)
+    # solved_game = solve(SearchState(game, []))
+    g = solution_postprocess(solved_game)
+    show_graph(g)
 

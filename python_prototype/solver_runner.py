@@ -2,7 +2,7 @@ from game import Game, visualize_game
 from solver import SearchState, solve
 
 
-def solve_and_print(game: Game) -> None:
+def solve_and_print(game: Game) -> SearchState:
     visualize_game(game).save("debug/input.png")
     solved_state = solve(SearchState(game, []))
     if solved_state.state_game.is_winning_state:
@@ -20,3 +20,5 @@ def solve_and_print(game: Game) -> None:
                 print(f"Update node at column {revealed[0] + 1}, row {revealed[1] + 1}")
             game = new_game
         visualize_game(game).save("final_state.png")
+    return solved_state
+

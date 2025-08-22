@@ -1,9 +1,7 @@
-from typing import Literal, Optional, Self
-from game import Game, GameNode, GameNodeType, GameOperation, visualize_game, OperationUndo, OperationStepForward
-from collections import deque
+from typing import Optional, Self
+from game import Game, GameNode, GameNodeType, GameOperation
 from functools import total_ordering
 import heapq
-import sys
 
 DEBUG = False
 
@@ -109,20 +107,3 @@ def solve(
     if candidate_state is not None:
         return candidate_state
     return start_state
-
-if __name__ == "__main__":
-    def input_to_node(in_str) -> GameNode:
-        if in_str == "?":
-            return GameNode(GameNodeType.UNKNOWN)
-        return GameNode(GameNodeType.KNOWN, in_str)
-
-    def main_input() -> Game:
-        lines = []
-        while line := input("Input from bottom to top: "):
-            lines.append([input_to_node(i) for i in line.split()])
-        game_state = Game(lines)
-        return game_state
-    game_state = main_input()
-    steps = solve(SearchState(game_state, []))
-
-    print(*steps, sep="\n")
