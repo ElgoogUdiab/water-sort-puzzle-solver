@@ -155,6 +155,18 @@ export class CanvasEditor {
             this.eraseMode = (e.target as HTMLInputElement).checked;
         });
 
+        const wheelHandler = (e: WheelEvent) => {
+            if (this.palette.length === 0) return;
+            e.preventDefault();
+            const delta = e.deltaY < 0 ? -1 : e.deltaY > 0 ? 1 : 0;
+            if (delta !== 0) {
+                this.activeColorIndex = (this.activeColorIndex + delta + this.palette.length) % this.palette.length;
+                this.renderPalette();
+            }
+        };
+        this.canvas.addEventListener('wheel', wheelHandler);
+        this.paletteEl.addEventListener('wheel', wheelHandler);
+
         this.canvas.addEventListener('pointerdown', (e: PointerEvent) => {
             if (e.pointerType === 'touch') {
                 this.touchStart = { x: e.clientX, y: e.clientY, id: e.pointerId };
