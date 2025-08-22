@@ -25,12 +25,17 @@ def solution_to_graph(input_solution: SearchState) -> nx.DiGraph:
     for i, op in enumerate(input_solution.path):
         src_group = states[i].groups[op.src]
         op_item = src_group[-1]
+        next_src_group = states[i + 1].groups[op.src]
+        op_revealing_color = (
+            next_src_group[-1].color if len(next_src_group) > 0 else None
+        )
         G.add_node(
             i,
             label=f"{op}",
             op_src=op.src,
             op_dst=op.dst,
             op_color=op_item.color,
+            op_revealing_color=op_revealing_color,
         )
 
     G.add_node("s", label="s")
@@ -67,21 +72,31 @@ def solution_postprocess(input_solution: SearchState) -> nx.DiGraph:
 def show_graph(G: nx.DiGraph):
     pos = graphviz_layout(G, prog="dot", root=G.nodes["s"])
     node_colors = []
+    edge_colors = []
     for n in G.nodes:
         if n in {"s", "t"}:
             node_colors.append("lightgray")
+            edge_colors.append("black")
         else:
             color = G.nodes[n].get("op_color")
             if isinstance(color, tuple):
                 node_colors.append([c / 255 for c in color])
             else:
                 node_colors.append("lightgray")
+
+            reveal_color = G.nodes[n].get("op_revealing_color")
+            if isinstance(reveal_color, tuple):
+                edge_colors.append([c / 255 for c in reveal_color])
+            else:
+                edge_colors.append("gray")
     nx.draw(
         G,
         pos,
         with_labels=True,
         arrows=True,
         node_color=node_colors,
+        edgecolors=edge_colors,
+        linewidths=2,
         labels=dict(G.nodes.data("label")),
     )
     plt.show()
