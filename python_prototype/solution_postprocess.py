@@ -69,6 +69,73 @@ def solution_postprocess(input_solution: SearchState) -> nx.DiGraph:
     G = solution_to_graph(input_solution)
     return G
 
+def priority_topo_sort(G: nx.DiGraph) -> list:
+    """Topologically sort ``G`` while prioritising preferred operations.
+
+    The function implements a Kahn style algorithm but, when multiple nodes
+    have zero in-degree, it scores them using information from the previously
+    selected operation.  The candidate with the highest score is dequeued.
+
+    Priorities (higher to lower):
+
+    1. ``op_color`` equals the previous operation's ``op_color``.
+    2. ``op_color`` equals the previous operation's ``op_revealing_color``.
+    3. ``{op_src, op_dst}`` intersects with that of the previous operation.
+
+    Nodes ``"s"`` and ``"t"`` are skipped in the returned order.
+    """
+
+    indegree = {node: G.in_degree(node) for node in G.nodes}
+    zero_indegree: list = [n for n, d in indegree.items() if d == 0]
+
+    result: list = []
+    prev_color = None
+    prev_reveal = None
+    prev_groups: set | None = None
+
+    def score(node) -> int:
+        if node in {"s", "t"}:
+            return -1
+        node_data = G.nodes[node]
+        node_color = node_data.get("op_color")
+        node_src = node_data.get("op_src")
+        node_dst = node_data.get("op_dst")
+        s = 0
+        if prev_color is not None and node_color == prev_color:
+            s += 4
+        if prev_reveal is not None and node_color == prev_reveal:
+            s += 2
+        if prev_groups and (node_src in prev_groups or node_dst in prev_groups):
+            s += 1
+        return s
+
+    while zero_indegree:
+        if "s" in zero_indegree:
+            current = "s"
+            zero_indegree.remove("s")
+        else:
+            current = max(
+                zero_indegree,
+                key=lambda n: (score(n), -n if isinstance(n, int) else float("-inf")),
+            )
+            zero_indegree.remove(current)
+
+        for succ in G.successors(current):
+            indegree[succ] -= 1
+            if indegree[succ] == 0:
+                zero_indegree.append(succ)
+
+        if current in {"s", "t"}:
+            continue
+
+        result.append(current)
+        node_data = G.nodes[current]
+        prev_color = node_data.get("op_color")
+        prev_reveal = node_data.get("op_revealing_color")
+        prev_groups = {node_data.get("op_src"), node_data.get("op_dst")}
+
+    return result
+
 def show_graph(G: nx.DiGraph):
     pos = graphviz_layout(G, prog="dot", root=G.nodes["s"])
     node_colors = []
