@@ -1,4 +1,4 @@
-from game import GameOperation, OperationStepForward
+from game import Game, GameOperation, OperationStepForward
 from solver import SearchState
 from typing import TypeGuard
 import networkx as nx
@@ -69,31 +69,36 @@ def solution_postprocess(input_solution: SearchState) -> nx.DiGraph:
     G = solution_to_graph(input_solution)
     return G
 
-def priority_topo_sort(G: nx.DiGraph) -> list:
-    """Topologically sort ``G`` while prioritising preferred operations.
+def priority_topo_sort(G: nx.DiGraph, initial_game: Game):
+    """Yield a prioritised topological ordering of ``G``.
 
-    The function implements a Kahn style algorithm but, when multiple nodes
+    This function implements a Kahn style algorithm but, when multiple nodes
     have zero in-degree, it scores them using information from the previously
-    selected operation.  The candidate with the highest score is dequeued.
+    selected operation and the current game state.  The candidate with the
+    highest score is dequeued and yielded immediately, so the caller can
+    consume the order lazily.
 
-    Priorities (higher to lower):
+    The scoring priorities are, from high to low:
 
-    1. ``op_color`` equals the previous operation's ``op_color``.
-    2. ``op_color`` equals the previous operation's ``op_revealing_color``.
-    3. ``{op_src, op_dst}`` intersects with that of the previous operation.
+    1. The move completes a tube in the current game state.
+    2. ``op_color`` equals the previous operation's ``op_color``.
+    3. ``op_color`` equals the previous operation's ``op_revealing_color``.
+    4. ``{op_src, op_dst}`` intersects with that of the previous operation.
 
-    Nodes ``"s"`` and ``"t"`` are skipped in the returned order.
+    Nodes ``"s"`` and ``"t"`` are skipped in the yielded order.
     """
 
     indegree = {node: G.in_degree(node) for node in G.nodes}
     zero_indegree: list = [n for n, d in indegree.items() if d == 0]
 
-    result: list = []
     prev_color = None
     prev_reveal = None
     prev_groups: set | None = None
+    game_state = initial_game
 
     def score(node) -> int:
+        """Score a candidate node based on the priorities above."""
+
         if node in {"s", "t"}:
             return -1
         node_data = G.nodes[node]
@@ -101,6 +106,13 @@ def priority_topo_sort(G: nx.DiGraph) -> list:
         node_src = node_data.get("op_src")
         node_dst = node_data.get("op_dst")
         s = 0
+
+        # Top priority: completing a tube after applying the move
+        op = OperationStepForward(node_src, node_dst)
+        if game_state.is_group_completed(game_state.apply_op(op).groups[node_dst]):
+            s += 8
+
+        # Secondary priorities based on previous operation context
         if prev_color is not None and node_color == prev_color:
             s += 4
         if prev_reveal is not None and node_color == prev_reveal:
@@ -128,13 +140,17 @@ def priority_topo_sort(G: nx.DiGraph) -> list:
         if current in {"s", "t"}:
             continue
 
-        result.append(current)
         node_data = G.nodes[current]
         prev_color = node_data.get("op_color")
         prev_reveal = node_data.get("op_revealing_color")
         prev_groups = {node_data.get("op_src"), node_data.get("op_dst")}
 
-    return result
+        # Advance the simulated game state to reflect the yielded operation
+        game_state = game_state.apply_op(
+            OperationStepForward(node_data.get("op_src"), node_data.get("op_dst"))
+        )
+
+        yield current
 
 def show_graph(G: nx.DiGraph):
     pos = graphviz_layout(G, prog="dot", root=G.nodes["s"])
