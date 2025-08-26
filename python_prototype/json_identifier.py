@@ -61,8 +61,8 @@ if __name__ == "__main__":
         print("Usage: json_identifier.py <puzzle.json>")
         sys.exit(1)
     game = read_json_file(sys.argv[1])
-    solved_game = solve_and_print(game)
+    solved_game_search_state = solve_and_print(game)
     # solved_game = solve(SearchState(game, []))
-    g = solution_postprocess(solved_game)
+    g = solution_postprocess(solved_game_search_state, game)
     show_graph(g)
 

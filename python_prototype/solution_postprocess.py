@@ -65,8 +65,11 @@ def solution_to_graph(input_solution: SearchState) -> nx.DiGraph:
 
     return TR
 
-def solution_postprocess(input_solution: SearchState) -> nx.DiGraph:
+def solution_postprocess(input_solution: SearchState, initial_game: Game) -> nx.DiGraph:
     G = solution_to_graph(input_solution)
+    for ind, node in enumerate(priority_topo_sort(G, initial_game)):
+        node_obj = G.nodes[node]
+        node_obj['label'] = f"{ind:02d}: {node_obj['label']}"
     return G
 
 def priority_topo_sort(G: nx.DiGraph, initial_game: Game):
@@ -171,7 +174,7 @@ def show_graph(G: nx.DiGraph):
             if isinstance(reveal_color, tuple):
                 edge_colors.append([c / 255 for c in reveal_color])
             else:
-                edge_colors.append("gray")
+                edge_colors.append("lightgray")
     nx.draw(
         G,
         pos,
