@@ -1,0 +1,25 @@
+{
+  "name": "Water Sort Puzzle Solver",
+  "short_name": "Water Sort",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "description": "Design and solve Water Sort and Ball Sort puzzles online.",
+  "background_color": "#0b1220",
+  "theme_color": "#0b1220",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}
+

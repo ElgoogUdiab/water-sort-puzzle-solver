@@ -28,3 +28,14 @@ Pull requests are welcome! Open an issue or fork the repository to propose chang
 
 ## 📄 License
 MIT
+
+## 📦 Progressive Web App (PWA)
+
+This site now supports installation and basic offline use via a service worker.
+
+- Install: In Chrome/Edge, open the site and use “Install app” from the address bar or menu.
+- Offline: The app shell (index and static assets) is cached after first load. Subsequent navigations work offline; network is used when available.
+
+Local testing
+- Dev: `npm run dev` (service workers may be limited in dev).
+- Production preview: `npm run build && npm run preview` then open the URL shown to test install/offline.

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="128" fill="#0b1220"/>
+  <g transform="translate(96,64)">
+    <rect x="48" y="32" width="224" height="336" rx="32" stroke="#8aa" stroke-width="18" fill="none"/>
+    <path d="M64 288h192c0 32-48 64-96 64s-96-32-96-64z" fill="#2b6cb0"/>
+    <circle cx="120" cy="168" r="22" fill="#ff7043"/>
+    <circle cx="184" cy="128" r="22" fill="#ef5350"/>
+    <circle cx="216" cy="192" r="22" fill="#42a5f5"/>
+  </g>
+  <title>Water Sort Maskable</title>
+</svg>
+
