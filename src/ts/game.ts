@@ -67,8 +67,48 @@ export class Game {
             capacity = [...set][0];
         }
         this.capacity = capacity;
+
+        // Normalize incoming groups (trim trailing EMPTY)
+        let normalized = groups.map(g => Game.normalizeGroup(g));
+
+        // Auto-complete: When exactly one color is incomplete and unknowns fill the gap,
+        // replace all UNKNOWN/UNKNOWN_REVEALED with that color and force NORMAL mode.
+        try {
+            // Count KNOWN colors and UNKNOWN nodes
+            const colorCount = new Map<string, { count: number; sample: Color }>();
+            let unknownTotal = 0;
+            for (const g of normalized) {
+                for (const n of g) {
+                    if (n.type === NodeType.KNOWN && n.color) {
+                        const key = n.color.toString();
+                        const entry = colorCount.get(key);
+                        if (entry) entry.count += 1; else colorCount.set(key, { count: 1, sample: n.color });
+                    } else if (n.type === NodeType.UNKNOWN || n.type === NodeType.UNKNOWN_REVEALED) {
+                        unknownTotal += 1;
+                    }
+                }
+            }
+            const incomplete: { key: string; missing: number; sample: Color }[] = [];
+            for (const [key, { count, sample }] of colorCount.entries()) {
+                if (count > 0 && count < this.capacity) {
+                    incomplete.push({ key, missing: this.capacity - count, sample });
+                }
+            }
+            if (incomplete.length === 1 && unknownTotal === incomplete[0].missing && unknownTotal > 0) {
+                const target = incomplete[0].sample; // Color instance
+                normalized = normalized.map(g => g.map(n =>
+                    (n.type === NodeType.UNKNOWN || n.type === NodeType.UNKNOWN_REVEALED)
+                        ? new GameNode(NodeType.KNOWN, n.pos, new Color(target.toString()))
+                        : n
+                ));
+                mode = GameMode.NORMAL;
+            }
+        } catch {
+            // Fail open: skip auto-completion on any unexpected error
+        }
+
         this.groups = Object.freeze(
-            groups.map(g => Object.freeze(Game.normalizeGroup(g)))
+            normalized.map(g => Object.freeze(g))
         );
         this.undoCount = undoCount;
         this.mode = mode;

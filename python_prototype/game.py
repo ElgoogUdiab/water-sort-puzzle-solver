@@ -77,6 +77,51 @@ class Game:
             self.group_capacity = length_set.pop()
         else:
             self.group_capacity = group_capacity
+        
+        # Auto-complete: if there is exactly one color incomplete and unknowns fill the gap,
+        # replace all UNKNOWN/UNKNOWN_REVEALED with that color and force NORMAL mode.
+        # This runs before internal normalization so downstream logic sees a NORMAL game with no unknowns.
+        try:
+            # Count KNOWN colors and UNKNOWNs across all provided groups
+            known_color_counter: Counter[Hashable] = Counter()
+            unknown_total = 0
+            for g in groups:
+                # Only consider non-empty nodes (EMPTYs will be trimmed later)
+                empty_seen = False
+                for n in reversed(g):
+                    if n.node_type == GameNodeType.EMPTY:
+                        if empty_seen:
+                            # There will be a validation later; ignore here
+                            continue
+                        # trailing EMPTY
+                        continue
+                    empty_seen = True
+                    if n.node_type == GameNodeType.KNOWN and n.color is not None:
+                        known_color_counter[n.color] += 1
+                    elif n.node_type in {GameNodeType.UNKNOWN, GameNodeType.UNKNOWN_REVEALED}:
+                        unknown_total += 1
+
+            # Identify colors with partial counts (0 < count < capacity)
+            incomplete_colors = [c for c, v in known_color_counter.items() if 0 < v < self.group_capacity]
+            if len(incomplete_colors) == 1:
+                target_color = incomplete_colors[0]
+                missing = self.group_capacity - known_color_counter[target_color]
+                if unknown_total == missing and unknown_total > 0:
+                    # Perform in-place replacement of unknowns with KNOWN target_color
+                    new_groups: list[list[GameNode]] = []
+                    for g in groups:
+                        new_g: list[GameNode] = []
+                        for n in g:
+                            if n.node_type in {GameNodeType.UNKNOWN, GameNodeType.UNKNOWN_REVEALED}:
+                                new_g.append(GameNode(GameNodeType.KNOWN, n.original_pos, target_color))
+                            else:
+                                new_g.append(n)
+                        new_groups.append(new_g)
+                    groups = new_groups
+                    game_mode = GameMode.NORMAL
+        except Exception:
+            # Fail-open: if anything unexpected happens, skip auto-completion
+            pass
         self.groups: FrozenList[FrozenList[GameNode]] = FrozenList()
         self._contain_unknown: bool = False
         self.undo_count = undo_count
