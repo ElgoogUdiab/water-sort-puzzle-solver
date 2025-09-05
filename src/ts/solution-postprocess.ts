@@ -1,9 +1,9 @@
 // Solution postprocessing - TypeScript port of Python solution_postprocess.py
 
-import { DirectedGraph } from './graph.ts';
-import { Game, StepOp } from './game.ts';
-import { SearchState } from './solver.ts';
-import { Color } from './types.ts';
+import { DirectedGraph } from './graph.js';
+import { Game, StepOp } from './game.js';
+import { SearchState } from './solver.js';
+import { Color } from './types.js';
 
 interface StepNodeData {
     label: string;

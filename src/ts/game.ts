@@ -1,4 +1,4 @@
-import { Color, GameMode, NodeType } from "./types";
+import { Color, GameMode, NodeType } from "./types.js";
 
 // 简单断言工具：失败时抛异常，同时能帮 TS 收窄类型
 function invariant(cond: unknown, msg: string): asserts cond {

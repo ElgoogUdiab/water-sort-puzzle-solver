@@ -41,7 +41,7 @@ class SearchState:
                 *self.state_game.heuristic,
                 self.instance_id,
             )
-        return (*self.state_game.heuristic, self.instance_id)
+        return (len(self.path), *self.state_game.heuristic, self.instance_id)
     
     def __eq__(self, other: Self):
         return self.value == other.value

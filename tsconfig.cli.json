@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "outDir": "./dist-cli",
+    "moduleResolution": "node",
+    "allowImportingTsExtensions": false,
+    "allowSyntheticDefaultImports": true,
+    "target": "ES2020",
+    "module": "ESNext"
+  },
+  "include": ["src/ts/json-solver.ts", "src/ts/game.ts", "src/ts/solver.ts", "src/ts/types.ts", "src/ts/graph.ts", "src/ts/solution-postprocess.ts"],
+  "exclude": ["node_modules", "dist", "src/ts/app.ts", "src/ts/canvas-editor.ts", "src/ts/visualization.ts"]
+}

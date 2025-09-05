@@ -1,9 +1,9 @@
 // Solver logic - TypeScript port of solver.py
 
-import { Game, StepOp, UndoOp } from './game.ts';
-import { NodeType, GameMode } from './types.ts';
+import { Game, StepOp, UndoOp } from './game.js';
+import { NodeType, GameMode } from './types.js';
 import FastPriorityQueue from 'fastpriorityqueue';
-import { solutionToGraph, priorityTopoSort } from './solution-postprocess.ts';
+import { solutionToGraph, priorityTopoSort } from './solution-postprocess.js';
 
 export class SearchState {
     static instanceCount = 0;
@@ -23,8 +23,8 @@ export class SearchState {
         this.instanceId = SearchState.assignNewInstanceId();
     }
 
-    get value(): [number, number, number] {
-        return [...this.stateGame.heuristic, this.instanceId] as [number, number, number];
+    get value(): [number, number, number, number] {
+        return [this.path.length, ...this.stateGame.heuristic, this.instanceId] as [number, number, number, number];
     }
 }
 

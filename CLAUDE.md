@@ -14,10 +14,15 @@ Water Sort Puzzle Solver is a dual-platform application with both web-based Type
 - `npm run preview` - Preview production build locally
 - `npm run type-check` - Run TypeScript type checking without emitting files
 - `npm run serve` - Simple HTTP server using Python (port 8000)
+- `npm run json_input_test <puzzle.json>` - TypeScript CLI solver (equivalent to Python json_identifier.py)
 
 **Python Prototype:**
 - No specific build system - run individual Python files directly
 - Main entry point: `cd python_prototype && python json_identifier.py input.json`
+
+**Comparing Implementations:**
+- Both implementations can process the same JSON puzzle files
+- Example: `npm run json_input_test python_prototype/input.json` vs `cd python_prototype && python json_identifier.py input.json`
 
 ## Architecture
 
