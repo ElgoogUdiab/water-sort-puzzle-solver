@@ -88,7 +88,7 @@ export function solutionToGraph(inputSolution: SearchState): DirectedGraph<StepN
 
     // Connect operations with no successors to the end node
     const srcNodes = new Set<string>();
-    for (const [from, to] of G.getAllEdges()) {
+    for (const [from] of G.getAllEdges()) {
         srcNodes.add(from);
     }
 
