@@ -118,7 +118,7 @@ class Game:
                                 new_g.append(n)
                         new_groups.append(new_g)
                     groups = new_groups
-                    game_mode = GameMode.NORMAL
+                    # Preserve original game mode during auto-completion
         except Exception:
             # Fail-open: if anything unexpected happens, skip auto-completion
             pass

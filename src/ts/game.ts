@@ -101,7 +101,7 @@ export class Game {
                         ? new GameNode(NodeType.KNOWN, n.pos, new Color(target.toString()))
                         : n
                 ));
-                mode = GameMode.NORMAL;
+                // Preserve original game mode during auto-completion
             }
         } catch {
             // Fail open: skip auto-completion on any unexpected error
