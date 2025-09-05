@@ -1,7 +1,8 @@
 // Main application entry point
 
 import { Game, GameNode } from './game.ts';
-import { solve, SearchState } from './solver.ts';
+// import { SearchState } from './solver.ts'; // Unused import
+import { SolverManager } from './solver-manager.ts';
 import { CanvasEditor } from './canvas-editor.ts';
 import { GameVisualizer, SolutionVisualizer } from './visualization.ts';
 import { GameState, NodeType, GameMode, Color } from './types.ts';
@@ -10,15 +11,84 @@ class WaterSortApp {
     canvasEditor: CanvasEditor;
     gameVisualizer: GameVisualizer;
     solutionVisualizer: SolutionVisualizer;
+    solverManager: SolverManager;
+    private isSolving: boolean = false;
 
     constructor() {
         this.canvasEditor = new CanvasEditor('grid', 'palette');
         this.gameVisualizer = new GameVisualizer('gameVisualization');
         this.solutionVisualizer = new SolutionVisualizer('solutionResult');
+        this.solverManager = new SolverManager();
 
         this.enforceNumericInput();
         this.setupEventListeners();
         this.initialize();
+    }
+
+    private lockUI(): void {
+        this.isSolving = true;
+        
+        // Lock controls that can change game state
+        const elementsToDisable = [
+            'solveBtn',          // Solve button
+            'pasteJson',         // Paste JSON button  
+            'reset',             // Reset button
+            'cols',              // Grid size controls
+            'rows',
+            'numcolors',         // Palette controls
+            'undo',              // Undo count
+            'searchDepth',       // Search parameters
+            'mode'               // Game mode
+        ];
+        
+        elementsToDisable.forEach(id => {
+            const element = document.getElementById(id) as HTMLButtonElement | HTMLInputElement;
+            if (element) {
+                element.disabled = true;
+            }
+        });
+        
+        // Lock canvas interactions
+        this.canvasEditor.setInteractive(false);
+        
+        // Update solve button text
+        const solveBtn = document.getElementById('solveBtn') as HTMLButtonElement;
+        if (solveBtn) {
+            solveBtn.textContent = 'Solving... (Click to Cancel)';
+            solveBtn.disabled = false; // Keep enabled for cancellation
+        }
+    }
+
+    private unlockUI(): void {
+        this.isSolving = false;
+        
+        // Re-enable all controls
+        const elementsToEnable = [
+            'solveBtn', 'pasteJson', 'reset', 'cols', 'rows', 
+            'numcolors', 'undo', 'searchDepth', 'mode'
+        ];
+        
+        elementsToEnable.forEach(id => {
+            const element = document.getElementById(id) as HTMLButtonElement | HTMLInputElement;
+            if (element) {
+                element.disabled = false;
+            }
+        });
+        
+        // Re-enable canvas interactions
+        this.canvasEditor.setInteractive(true);
+        
+        // Restore solve button text
+        const solveBtn = document.getElementById('solveBtn') as HTMLButtonElement;
+        if (solveBtn) {
+            solveBtn.textContent = 'Solve Puzzle';
+        }
+    }
+
+    private cancelSolving(): void {
+        this.solverManager.cancel();
+        this.unlockUI();
+        this.solutionVisualizer.displayError('Solving cancelled by user');
     }
 
     private sanitizeNumberInput(input: HTMLInputElement): number {
@@ -84,7 +154,13 @@ class WaterSortApp {
         });
 
         document.getElementById('solveBtn')!.addEventListener('click', () => {
-            this.solveGame();
+            if (this.isSolving) {
+                // Cancel current solve operation
+                this.cancelSolving();
+            } else {
+                // Start new solve operation
+                this.solveGame();
+            }
         });
 
         // Listen for game state changes from canvas
@@ -226,7 +302,7 @@ class WaterSortApp {
         }
     }
 
-    solveGame(): void {
+    async solveGame(): Promise<void> {
         const debugMode = (document.getElementById('debugMode') as HTMLInputElement).checked;
         const searchDepth = this.sanitizeNumberInput(document.getElementById('searchDepth') as HTMLInputElement);
         const undoCount = this.sanitizeNumberInput(document.getElementById('undo') as HTMLInputElement);
@@ -265,15 +341,42 @@ class WaterSortApp {
                 console.log('Game ops:', game.ops());
             }
             
-            const startState = new SearchState(game, []);
-            const solvedState = solve(startState, searchDepth, debugMode);
-
-            this.solutionVisualizer.displaySearchState(solvedState, game);
+            // Lock UI during solving
+            this.lockUI();
+            
+            try {
+                // Use worker-based solver with progress updates
+                const result = await this.solverManager.solve(
+                    game, 
+                    searchDepth, 
+                    debugMode,
+                    (progress) => {
+                        // Show progress in solution visualizer
+                        this.solutionVisualizer.displayProgress(progress.message);
+                    }
+                );
+                
+                // Display the solution
+                this.solutionVisualizer.displaySearchState(result.solution, game);
+                
+                if (debugMode) {
+                    console.log(`Solution found in ${result.searchTime.toFixed(2)}ms`);
+                }
+                
+            } catch (solverError: unknown) {
+                const err = solverError as Error;
+                console.error('Solver error:', err);
+                this.solutionVisualizer.displayError('Solver error: ' + err.message);
+            } finally {
+                // Always unlock UI when done
+                this.unlockUI();
+            }
             
         } catch (error: unknown) {
             const err = error as Error;
-            console.error('Solver error:', err);
-            this.solutionVisualizer.displayError('Error: ' + err.message);
+            console.error('Setup error:', err);
+            this.solutionVisualizer.displayError('Setup error: ' + err.message);
+            this.unlockUI();
         }
     }
 }

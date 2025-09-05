@@ -138,6 +138,10 @@ export class SolutionVisualizer {
         this.container.innerHTML = `<div class="error">${message}</div>`;
     }
 
+    displayProgress(message: string): void {
+        this.container.innerHTML = `<div class="progress">🔄 ${message}</div>`;
+    }
+
     private buildSolutionGames(ops: (StepOp | UndoOp)[], initialGame: Game): { states: Game[]; reveals: ({ col: number, row: number } | null)[] } {
         const games: Game[] = [initialGame];
         const reveals: ({ col: number, row: number } | null)[] = [];
