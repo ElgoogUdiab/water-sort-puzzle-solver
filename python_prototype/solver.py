@@ -71,9 +71,15 @@ def solve_no_unknown(start_state: SearchState) -> SearchState:
     discovered_dict: dict[frozenset[frozenset[GameNode]], tuple[Game, int]] = {}
 
     searched_state_count = 0
+    best_solution_length = float('inf')  # Track best solution found
+    
     while SearchStateQueue:
         current_search_state = heapq.heappop(SearchStateQueue)
         state_game = current_search_state.state_game
+
+        # Prune paths that are already longer than best solution
+        if len(current_search_state.path) >= best_solution_length:
+            continue
 
         discovered = discovered_dict.get(state_game._to_frozensets, None)
         if discovered is not None:
@@ -86,6 +92,7 @@ def solve_no_unknown(start_state: SearchState) -> SearchState:
             print(f"{searched_state_count=}")
 
         if state_game.is_winning_state:
+            best_solution_length = len(current_search_state.path)
             return current_search_state
 
         path = current_search_state.path
@@ -94,7 +101,10 @@ def solve_no_unknown(start_state: SearchState) -> SearchState:
         if DEBUG:
             print(f"{ops=}")
         for op in ops:
-            heapq.heappush(SearchStateQueue, SearchState(state_game.apply_op(op), path + [op]))
+            new_path = path + [op]
+            # Only add to queue if path length is promising
+            if len(new_path) < best_solution_length:
+                heapq.heappush(SearchStateQueue, SearchState(state_game.apply_op(op), new_path))
 
     return start_state
 

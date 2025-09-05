@@ -48,6 +48,7 @@ export function solve(startState: SearchState, depth = 8, debug = false): Search
     const discoveredDict = new Map<string, [Game, number]>();
     let candidateState: SearchState | null = null;
     let candidateSearchStateCount = Infinity;
+    let bestSolutionLength = Infinity;  // Track best solution found
 
     let searchedStateCount = 0;
 
@@ -85,6 +86,11 @@ export function solve(startState: SearchState, depth = 8, debug = false): Search
         const currentSearchState = pq.poll()!;
         const stateGame = currentSearchState.stateGame;
 
+        // Prune paths that are already longer than best solution
+        if (currentSearchState.path.length >= bestSolutionLength) {
+            continue;
+        }
+
         const discovered = discoveredDict.get(canonicalStateKey(stateGame));
         if (discovered !== undefined) {
             if (discovered[1] >= stateGame.undoCount) {
@@ -100,6 +106,7 @@ export function solve(startState: SearchState, depth = 8, debug = false): Search
 
         if (!startState.stateGame.containsUnknown) {
             if (stateGame.winning) {
+                bestSolutionLength = currentSearchState.path.length;
                 return currentSearchState;
             }
         } else {
@@ -148,7 +155,11 @@ export function solve(startState: SearchState, depth = 8, debug = false): Search
         }
 
         for (const op of ops) {
-            pq.add(new SearchState(stateGame.apply(op), [...path, op]));
+            const newPath = [...path, op];
+            // Only add to queue if path length is promising
+            if (newPath.length < bestSolutionLength) {
+                pq.add(new SearchState(stateGame.apply(op), newPath));
+            }
         }
     }
 
