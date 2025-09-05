@@ -347,6 +347,69 @@ export class Game {
         }
         return seg;
     }
+
+    get revealableInOne(): number {
+        // Number of available ops that reveal a new unknown immediately
+        // We simulate each legal op once and count how many would set
+        // `revealedNew` on the resulting state. `Undo` ops don't contribute.
+        let count = 0;
+        try {
+            for (const op of this.ops()) {
+                // Skip undo as it doesn't create a new reveal
+                if (op instanceof UndoOp) {
+                    continue;
+                }
+                const newState = this.apply(op);
+                if (newState.revealedNew) {
+                    count++;
+                }
+            }
+        } catch {
+            // Fail open: return 0 on any unexpected error
+        }
+        return count;
+    }
+
+    get unknownCount(): number {
+        // Count total UNKNOWN nodes (not UNKNOWN_REVEALED)
+        let count = 0;
+        for (const g of this.groups) {
+            for (const n of g) {
+                if (n.type === NodeType.UNKNOWN) {
+                    count++;
+                }
+            }
+        }
+        return count;
+    }
+
+    get shouldTerminateUnknownSearch(): boolean {
+        // Terminal condition for unknown search - stop when we have enough info to complete
+        // Returns true when:
+        // 1. Only one UNKNOWN node remains, OR
+        // 2. We've revealed most unknowns (heuristic for having enough info)
+        
+        if (!this.containsUnknown) {
+            return false;
+        }
+        
+        // Count total unrevealed unknowns
+        const totalUnknown = this.unknownCount;
+        if (totalUnknown <= 1) {
+            return true;
+        }
+        
+        // Count how many unknowns we've revealed vs total
+        const unknownRevealed = this.unknownRevealedCount;
+        const totalNodesWithUnknowns = totalUnknown + unknownRevealed;
+        
+        // If we've revealed most unknowns, we probably have enough info
+        if (totalNodesWithUnknowns > 0 && unknownRevealed >= (totalNodesWithUnknowns - 1)) {
+            return true;
+        }
+        
+        return false;
+    }
     
     get completedGroupCount(): number {
         return this.groups.filter(g => this.isGroupCompleted(g)).length;

@@ -67,4 +67,4 @@ The web application includes Progressive Web App features:
 - Canvas editor allows interactive puzzle creation and editing
 - Solution visualization provides step-by-step move playback
 - JSON format used for puzzle import/export between implementations
-- The usual workflow for any algorithm upgrade is first do it in python prototype, and after further testing, sync to ts implementation
+- For any algorithm upgrade and optimization, first do it in python prototype, and after further testing by the user, port it to ts implementation.

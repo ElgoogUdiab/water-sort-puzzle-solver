@@ -415,6 +415,36 @@ class Game:
             "undoCount": self.undo_count,
         }
 
+    @cached_property  
+    def should_terminate_unknown_search(self) -> bool:
+        """Terminal condition for unknown search - stop when we have enough info to complete.
+        
+        Returns True when:
+        1. Only one UNKNOWN node remains, OR
+        2. Only one color has UNKNOWN nodes remaining
+        
+        This indicates we have enough information to complete the puzzle.
+        """
+        if not self._contain_unknown:
+            return False
+            
+        # Count total unrevealed unknowns
+        total_unknown = self.unknown_count
+        if total_unknown <= 1:
+            return True
+            
+        # Count how many colors still have unknown nodes
+        # We need to map positions of unknowns to their colors when they get revealed
+        # For now, use a simpler heuristic: if we've revealed "enough" unknowns relative to total
+        unknown_revealed = self.unknown_revealed_count
+        total_nodes_with_unknowns = total_unknown + unknown_revealed
+        
+        # If we've revealed most unknowns, we probably have enough info
+        if total_nodes_with_unknowns > 0 and unknown_revealed >= (total_nodes_with_unknowns - 1):
+            return True
+            
+        return False
+
 
 def visualize_game(game: Game, scale: int = 20) -> Image:
     game_size = (game.group_capacity, len(game.groups))

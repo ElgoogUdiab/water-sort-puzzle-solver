@@ -140,6 +140,12 @@ def solve_with_unknown(start_state: SearchState, depth: int = 8) -> SearchState:
                 if current_search_state.state_game.segments < candidate_state.state_game.segments:
                     candidate_state = current_search_state
         else:
+            # Check terminal condition - stop if we have enough info to complete puzzle
+            if state_game.should_terminate_unknown_search:
+                if DEBUG:
+                    print(f"Terminal condition met at search state {searched_state_count} - enough unknowns revealed")
+                return current_search_state
+            
             if state_game.is_meaningful_state:
                 for _ in range(1):
                     # Whether to set a candidate state
