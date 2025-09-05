@@ -1,8 +1,9 @@
 // Solver logic - TypeScript port of solver.py
 
 import { Game, StepOp, UndoOp } from './game.ts';
-import { NodeType } from './types.ts';
+import { NodeType, GameMode } from './types.ts';
 import FastPriorityQueue from 'fastpriorityqueue';
+import { solutionToGraph, priorityTopoSort } from './solution-postprocess.ts';
 
 export class SearchState {
     static instanceCount = 0;
@@ -151,9 +152,36 @@ export function solve(startState: SearchState, depth = 8, debug = false): Search
         }
     }
 
+    let solution: SearchState;
     if (candidateState !== null) {
-        return candidateState;
+        solution = candidateState;
+    } else {
+        solution = startState;
     }
 
-    return startState;
+    // Apply postprocessing for NORMAL and NO_COMBO game modes with no unknowns (reorder steps)
+    if ((startState.stateGame.mode === GameMode.NORMAL || startState.stateGame.mode === GameMode.NO_COMBO) && 
+        !startState.stateGame.containsUnknown) {
+        
+        // Use imported functions
+        
+        // Generate optimized step order
+        const G = solutionToGraph(solution);
+        const orderedNodes = priorityTopoSort(G, startState.stateGame);
+        
+        // Rebuild the solution path with optimized order
+        const optimizedPath: StepOp[] = [];
+        for (const nodeId of orderedNodes) {
+            const nodeData = G.getNodeData(nodeId);
+            if (nodeData) {
+                const op = new StepOp(nodeData.opSrc, nodeData.opDst);
+                optimizedPath.push(op);
+            }
+        }
+        
+        // Create new SearchState with optimized path
+        solution = new SearchState(solution.stateGame, optimizedPath);
+    }
+
+    return solution;
 }

@@ -9,7 +9,7 @@ def solve_and_print(game: Game) -> SearchState:
         print(*solved_state.path, sep="\n")
     else:
         print("Follow the steps, update the blocks, and run again:")
-        for step in solved_state.path:
+        for ind, step in enumerate(solved_state.path, start=1):
             new_game = game.apply_op(step)
             print(step)
             if new_game.unknown_revealed_count > game.unknown_revealed_count:
@@ -19,6 +19,7 @@ def solve_and_print(game: Game) -> SearchState:
                 revealed = revealed_set.pop()
                 print(f"Update node at column {revealed[0] + 1}, row {revealed[1] + 1}")
             game = new_game
-        visualize_game(game).save("final_state.png")
+            visualize_game(game).save(f"debug/{ind:02d}.png")
+        visualize_game(game).save("debug/final_state.png")
     return solved_state
 

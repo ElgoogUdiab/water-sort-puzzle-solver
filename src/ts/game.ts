@@ -204,8 +204,8 @@ export class Game {
                     dst[dst.length - 1].type === NodeType.KNOWN &&
                     dst[dst.length - 1].color?.toString() === opItem.color?.toString() &&
                     new Set(dst.map(n => n.color ? n.color.toString() : null)).size === 1) {
-                    tmp.splice(0, tmp.length, new StepOp(s, d));
-                    break;
+                    tmp.push(new StepOp(s, d));
+                    continue;
                 }
                 
                 // Empty destination - any block type can move here

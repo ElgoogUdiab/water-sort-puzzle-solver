@@ -209,8 +209,8 @@ class Game:
                     
                 # Dedicated destination available for given source
                 if op_item.node_type == GameNodeType.KNOWN and len(dst_group) > 0 and dst_group[-1].color == op_item.color and len(set(node.color for node in dst_group)) == 1:
-                    temp_result = [OperationStepForward(src, dst)]
-                    break
+                    temp_result.append(OperationStepForward(src, dst))
+                    continue
                 
                 # Empty destination
                 if len(dst_group) == 0:
@@ -312,6 +312,28 @@ class Game:
     @cached_property
     def unknown_revealed_count(self) -> int:
         return len(self.unknown_revealed_nodes)
+    
+    @cached_property
+    def revealable_in_one(self) -> int:
+        """Number of available ops that reveal a new unknown immediately.
+
+        We simulate each legal op once and count how many would set
+        `revealed_new` on the resulting state. `Undo` ops don't contribute.
+        Cached to avoid recomputation while exploring the same state.
+        """
+        c = 0
+        try:
+            for op in self.ops():
+                # Skip undo as it doesn't create a new reveal
+                if isinstance(op, OperationUndo):
+                    continue
+                new_state = self.apply_op(op)
+                if new_state.revealed_new:
+                    c += 1
+        except Exception:
+            # Defensive: if anything unexpected happens, treat as no immediate reveals
+            return 0
+        return c
     
     @cached_property
     def is_meaningful_state(self) -> bool:

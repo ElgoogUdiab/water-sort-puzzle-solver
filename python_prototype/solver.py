@@ -1,5 +1,5 @@
 from typing import Optional, Self
-from game import Game, GameNode, GameNodeType, GameOperation
+from game import Game, GameNode, GameNodeType, GameOperation, GameMode
 from functools import total_ordering
 import heapq
 
@@ -20,7 +20,27 @@ class SearchState:
         self.instance_id = self.assign_new_instance_id()
     
     @property
-    def value(self) -> tuple[int, int]:
+    def value(self) -> tuple[int, ...]:
+        """Priority tuple for the search queue.
+
+        - Unknown-aware mode: prefer states that revealed more unknowns, can
+          reveal in the next move, just revealed something, and with shorter
+          paths; then fall back to structural heuristics.
+        - Normal mode: fall back to existing structural heuristic.
+        """
+        if self.state_game._contain_unknown:
+            unknown_revealed = self.state_game.unknown_revealed_count
+            # More immediate reveal options is better
+            revealable_next = getattr(self.state_game, 'revealable_in_one', 0)
+            just_revealed_penalty = 0 if self.state_game.revealed_new else 1
+            return (
+                -unknown_revealed,
+                -revealable_next,
+                just_revealed_penalty,
+                len(self.path),
+                *self.state_game.heuristic,
+                self.instance_id,
+            )
         return (*self.state_game.heuristic, self.instance_id)
     
     def __eq__(self, other: Self):
@@ -34,7 +54,16 @@ def is_a_more_valueable_than_b(a: SearchState, b: SearchState):
         return True
     if a_count < b_count:
         return False
-    return len(a.path) < len(b.path)
+    # Prefer states that can reveal in the very next move
+    a_next = getattr(a.state_game, 'revealable_in_one', 0)
+    b_next = getattr(b.state_game, 'revealable_in_one', 0)
+    if a_next != b_next:
+        return a_next > b_next
+    # Shorter path is better
+    if len(a.path) != len(b.path):
+        return len(a.path) < len(b.path)
+    # Fallback to fewer segments
+    return a.state_game.segments < b.state_game.segments
 
 def solve_no_unknown(start_state: SearchState) -> SearchState:
     """Solve when the starting game contains no unknowns."""
@@ -140,6 +169,28 @@ def solve_with_unknown(start_state: SearchState, depth: int = 8) -> SearchState:
 def solve(start_state: SearchState, depth: int = 8) -> SearchState:
     """Mux: dispatch to specialized solvers based on presence of unknowns."""
     if not start_state.state_game._contain_unknown:
-        return solve_no_unknown(start_state)
+        solution = solve_no_unknown(start_state)
     else:
-        return solve_with_unknown(start_state, depth)
+        solution = solve_with_unknown(start_state, depth)
+    
+    # Apply postprocessing for NORMAL and NO_COMBO game modes with no unknowns (reorder steps)
+    if (start_state.state_game.game_mode in {GameMode.NORMAL, GameMode.NO_COMBO} and 
+        not start_state.state_game._contain_unknown):
+        from solution_postprocess import solution_postprocess, priority_topo_sort, solution_to_graph
+        from game import OperationStepForward
+        
+        # Generate optimized step order
+        G = solution_to_graph(solution)
+        ordered_nodes = list(priority_topo_sort(G, start_state.state_game))
+        
+        # Rebuild the solution path with optimized order
+        optimized_path = []
+        for node in ordered_nodes:
+            node_data = G.nodes[node]
+            op = OperationStepForward(node_data['op_src'], node_data['op_dst'])
+            optimized_path.append(op)
+        
+        # Create new SearchState with optimized path
+        solution = SearchState(solution.state_game, optimized_path)
+    
+    return solution
