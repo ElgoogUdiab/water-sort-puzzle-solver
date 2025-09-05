@@ -21,33 +21,39 @@ class SearchState:
     
     @property
     def value(self) -> tuple[int, ...]:
-        """Priority tuple for the search queue.
-
-        - Unknown-aware mode: prefer states that revealed more unknowns, can
-          reveal in the next move, just revealed something, and with shorter
-          paths; then fall back to structural heuristics.
-        - Normal mode: fall back to existing structural heuristic.
-        """
-        if self.state_game._contain_unknown:
-            unknown_revealed = self.state_game.unknown_revealed_count
-            # More immediate reveal options is better
-            revealable_next = getattr(self.state_game, 'revealable_in_one', 0)
-            just_revealed_penalty = 0 if self.state_game.revealed_new else 1
-            return (
-                -unknown_revealed,
-                -revealable_next,
-                just_revealed_penalty,
-                len(self.path),
-                *self.state_game.heuristic,
-                self.instance_id,
-            )
-        return (len(self.path), *self.state_game.heuristic, self.instance_id)
+        """Priority tuple for the search queue."""
+        return calculate_search_priority(self)
     
     def __eq__(self, other: Self):
         return self.value == other.value
     
     def __lt__(self, other: Self):
         return self.value < other.value
+
+def calculate_search_priority(search_state: SearchState) -> tuple[int, ...]:
+    """Calculate priority tuple for search queue ordering.
+    
+    - Unknown-aware mode: prefer states that revealed more unknowns, can
+      reveal in the next move, just revealed something, and with shorter
+      paths; then fall back to structural heuristics.
+    - Normal mode: fall back to existing structural heuristic.
+    """
+    state_game = search_state.state_game
+    
+    if state_game._contain_unknown:
+        unknown_revealed = state_game.unknown_revealed_count
+        # More immediate reveal options is better
+        revealable_next = getattr(state_game, 'revealable_in_one', 0)
+        just_revealed_penalty = 0 if state_game.revealed_new else 1
+        return (
+            -unknown_revealed,
+            -revealable_next,
+            just_revealed_penalty,
+            len(search_state.path),
+            *state_game.heuristic,
+            search_state.instance_id,
+        )
+    return (len(search_state.path), *state_game.heuristic, search_state.instance_id)
 
 def is_a_more_valueable_than_b(a: SearchState, b: SearchState):
     if (a_count := a.state_game.unknown_revealed_count) > (b_count := b.state_game.unknown_revealed_count):

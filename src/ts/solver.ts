@@ -25,29 +25,38 @@ export class SearchState {
 
     get value(): number[] {
         /**
-         * Priority tuple for the search queue.
-         * 
-         * - Unknown-aware mode: prefer states that revealed more unknowns, can
-         *   reveal in the next move, just revealed something, and with shorter
-         *   paths; then fall back to structural heuristics.
-         * - Normal mode: fall back to existing structural heuristic.
+         * Priority array for the search queue.
          */
-        if (this.stateGame.containsUnknown) {
-            const unknownRevealed = this.stateGame.unknownRevealedCount;
-            // More immediate reveal options is better
-            const revealableNext = this.stateGame.revealableInOne;
-            const justRevealedPenalty = this.stateGame.revealedNew ? 0 : 1;
-            return [
-                -unknownRevealed,
-                -revealableNext,
-                justRevealedPenalty,
-                this.path.length,
-                ...this.stateGame.heuristic,
-                this.instanceId
-            ];
-        }
-        return [this.path.length, ...this.stateGame.heuristic, this.instanceId];
+        return calculateSearchPriority(this);
     }
+}
+
+function calculateSearchPriority(searchState: SearchState): number[] {
+    /**
+     * Calculate priority array for search queue ordering.
+     * 
+     * - Unknown-aware mode: prefer states that revealed more unknowns, can
+     *   reveal in the next move, just revealed something, and with shorter
+     *   paths; then fall back to structural heuristics.
+     * - Normal mode: fall back to existing structural heuristic.
+     */
+    const stateGame = searchState.stateGame;
+    
+    if (stateGame.containsUnknown) {
+        const unknownRevealed = stateGame.unknownRevealedCount;
+        // More immediate reveal options is better
+        const revealableNext = stateGame.revealableInOne;
+        const justRevealedPenalty = stateGame.revealedNew ? 0 : 1;
+        return [
+            -unknownRevealed,
+            -revealableNext,
+            justRevealedPenalty,
+            searchState.path.length,
+            ...stateGame.heuristic,
+            searchState.instanceId
+        ];
+    }
+    return [searchState.path.length, ...stateGame.heuristic, searchState.instanceId];
 }
 
 function compSearchState(a: SearchState, b: SearchState): boolean {
