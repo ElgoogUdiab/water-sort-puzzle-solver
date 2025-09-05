@@ -62,7 +62,8 @@ if __name__ == "__main__":
         sys.exit(1)
     game = read_json_file(sys.argv[1])
     solved_game_search_state = solve_and_print(game)
-    # solved_game = solve(SearchState(game, []))
-    g = solution_postprocess(solved_game_search_state, game)
-    show_graph(g)
+    # solved_game_search_state = solve(SearchState(game, []))
+    # g = solution_postprocess(solved_game_search_state, game)
+    # build_solution_summaries(solved_game_search_state, game)
+    # show_graph(g)
 
