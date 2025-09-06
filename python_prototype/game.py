@@ -118,7 +118,7 @@ class Game:
                                 new_g.append(n)
                         new_groups.append(new_g)
                     groups = new_groups
-                    game_mode = GameMode.NORMAL
+                    # Preserve original game mode during auto-completion
         except Exception:
             # Fail-open: if anything unexpected happens, skip auto-completion
             pass
@@ -209,8 +209,8 @@ class Game:
                     
                 # Dedicated destination available for given source
                 if op_item.node_type == GameNodeType.KNOWN and len(dst_group) > 0 and dst_group[-1].color == op_item.color and len(set(node.color for node in dst_group)) == 1:
-                    temp_result = [OperationStepForward(src, dst)]
-                    break
+                    temp_result.append(OperationStepForward(src, dst))
+                    continue
                 
                 # Empty destination
                 if len(dst_group) == 0:
@@ -314,6 +314,28 @@ class Game:
         return len(self.unknown_revealed_nodes)
     
     @cached_property
+    def revealable_in_one(self) -> int:
+        """Number of available ops that reveal a new unknown immediately.
+
+        We simulate each legal op once and count how many would set
+        `revealed_new` on the resulting state. `Undo` ops don't contribute.
+        Cached to avoid recomputation while exploring the same state.
+        """
+        c = 0
+        try:
+            for op in self.ops():
+                # Skip undo as it doesn't create a new reveal
+                if isinstance(op, OperationUndo):
+                    continue
+                new_state = self.apply_op(op)
+                if new_state.revealed_new:
+                    c += 1
+        except Exception:
+            # Defensive: if anything unexpected happens, treat as no immediate reveals
+            return 0
+        return c
+    
+    @cached_property
     def is_meaningful_state(self) -> bool:
         if not self.revealed_new:
             return False
@@ -392,6 +414,36 @@ class Game:
             "groups": [[node_to_dict(n) for n in g] for g in self.groups],
             "undoCount": self.undo_count,
         }
+
+    @cached_property  
+    def should_terminate_unknown_search(self) -> bool:
+        """Terminal condition for unknown search - stop when we have enough info to complete.
+        
+        Returns True when:
+        1. Only one UNKNOWN node remains, OR
+        2. Only one color has UNKNOWN nodes remaining
+        
+        This indicates we have enough information to complete the puzzle.
+        """
+        if not self._contain_unknown:
+            return False
+            
+        # Count total unrevealed unknowns
+        total_unknown = self.unknown_count
+        if total_unknown <= 1:
+            return True
+            
+        # Count how many colors still have unknown nodes
+        # We need to map positions of unknowns to their colors when they get revealed
+        # For now, use a simpler heuristic: if we've revealed "enough" unknowns relative to total
+        unknown_revealed = self.unknown_revealed_count
+        total_nodes_with_unknowns = total_unknown + unknown_revealed
+        
+        # If we've revealed most unknowns, we probably have enough info
+        if total_nodes_with_unknowns > 0 and unknown_revealed >= (total_nodes_with_unknowns - 1):
+            return True
+            
+        return False
 
 
 def visualize_game(game: Game, scale: int = 20) -> Image:

@@ -17,6 +17,7 @@ export class CanvasEditor {
     touchStart: { x: number; y: number; id: number } | null;
     touchMoved: boolean;
     isErasing: boolean;
+    isInteractive: boolean;
 
     constructor(canvasId: string, paletteId: string, options: {width?: number, height?: number} = {}) {
         this.canvas = document.getElementById(canvasId) as HTMLCanvasElement;
@@ -35,6 +36,7 @@ export class CanvasEditor {
         this.touchStart = null;
         this.touchMoved = false;
         this.isErasing = false;
+        this.isInteractive = true;
         
         this.setupEventListeners();
         this.rebuildPalette();
@@ -93,6 +95,7 @@ export class CanvasEditor {
             sw.appendChild(badge);
             
             sw.onclick = () => { 
+                if (!this.isInteractive) return;
                 this.activeColorIndex = idx; 
                 this.renderPalette(); 
             };
@@ -232,6 +235,7 @@ export class CanvasEditor {
     }
 
     private eraseCell(cx: number, cy: number): void {
+        if (!this.isInteractive) return;
         if (cx < 0 || cy < 0 || cx >= this.W || cy >= this.H) return;
         const cell = this.board[cx][cy];
         if (cell.type !== NodeType.EMPTY) {
@@ -247,6 +251,7 @@ export class CanvasEditor {
     }
 
     handleCanvasPointer(e: PointerEvent): void {
+        if (!this.isInteractive) return;
         if (e.button !== 0) return;
         const rect = this.canvas.getBoundingClientRect();
         const cx = Math.floor((e.clientX - rect.left) / this.S);
@@ -357,5 +362,24 @@ export class CanvasEditor {
             groups: this.toSolverFormat().groups
         };
         return JSON.stringify(data);
+    }
+
+    setInteractive(interactive: boolean): void {
+        this.isInteractive = interactive;
+        
+        // Apply visual feedback by changing canvas style
+        if (interactive) {
+            this.canvas.style.opacity = '1';
+            this.canvas.style.cursor = 'pointer';
+            this.canvas.style.pointerEvents = 'auto';
+        } else {
+            this.canvas.style.opacity = '0.5';
+            this.canvas.style.cursor = 'not-allowed';
+            this.canvas.style.pointerEvents = 'none';
+        }
+        
+        // Also disable/enable palette interaction
+        this.paletteEl.style.pointerEvents = interactive ? 'auto' : 'none';
+        this.paletteEl.style.opacity = interactive ? '1' : '0.5';
     }
 }

@@ -1,4 +1,4 @@
-import { Color, GameMode, NodeType } from "./types";
+import { Color, GameMode, NodeType } from "./types.js";
 
 // 简单断言工具：失败时抛异常，同时能帮 TS 收窄类型
 function invariant(cond: unknown, msg: string): asserts cond {
@@ -101,7 +101,7 @@ export class Game {
                         ? new GameNode(NodeType.KNOWN, n.pos, new Color(target.toString()))
                         : n
                 ));
-                mode = GameMode.NORMAL;
+                // Preserve original game mode during auto-completion
             }
         } catch {
             // Fail open: skip auto-completion on any unexpected error
@@ -204,8 +204,8 @@ export class Game {
                     dst[dst.length - 1].type === NodeType.KNOWN &&
                     dst[dst.length - 1].color?.toString() === opItem.color?.toString() &&
                     new Set(dst.map(n => n.color ? n.color.toString() : null)).size === 1) {
-                    tmp.splice(0, tmp.length, new StepOp(s, d));
-                    break;
+                    tmp.push(new StepOp(s, d));
+                    continue;
                 }
                 
                 // Empty destination - any block type can move here
@@ -346,6 +346,69 @@ export class Game {
             }
         }
         return seg;
+    }
+
+    get revealableInOne(): number {
+        // Number of available ops that reveal a new unknown immediately
+        // We simulate each legal op once and count how many would set
+        // `revealedNew` on the resulting state. `Undo` ops don't contribute.
+        let count = 0;
+        try {
+            for (const op of this.ops()) {
+                // Skip undo as it doesn't create a new reveal
+                if (op instanceof UndoOp) {
+                    continue;
+                }
+                const newState = this.apply(op);
+                if (newState.revealedNew) {
+                    count++;
+                }
+            }
+        } catch {
+            // Fail open: return 0 on any unexpected error
+        }
+        return count;
+    }
+
+    get unknownCount(): number {
+        // Count total UNKNOWN nodes (not UNKNOWN_REVEALED)
+        let count = 0;
+        for (const g of this.groups) {
+            for (const n of g) {
+                if (n.type === NodeType.UNKNOWN) {
+                    count++;
+                }
+            }
+        }
+        return count;
+    }
+
+    get shouldTerminateUnknownSearch(): boolean {
+        // Terminal condition for unknown search - stop when we have enough info to complete
+        // Returns true when:
+        // 1. Only one UNKNOWN node remains, OR
+        // 2. We've revealed most unknowns (heuristic for having enough info)
+        
+        if (!this.containsUnknown) {
+            return false;
+        }
+        
+        // Count total unrevealed unknowns
+        const totalUnknown = this.unknownCount;
+        if (totalUnknown <= 1) {
+            return true;
+        }
+        
+        // Count how many unknowns we've revealed vs total
+        const unknownRevealed = this.unknownRevealedCount;
+        const totalNodesWithUnknowns = totalUnknown + unknownRevealed;
+        
+        // If we've revealed most unknowns, we probably have enough info
+        if (totalNodesWithUnknowns > 0 && unknownRevealed >= (totalNodesWithUnknowns - 1)) {
+            return true;
+        }
+        
+        return false;
     }
     
     get completedGroupCount(): number {
